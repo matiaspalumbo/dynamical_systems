@@ -6,6 +6,8 @@ sys.path.append('/Users/matiaspalumbo/Documents/Manim stuff/dynamical_systems')
 from manimlib import *
 from dynamical_systems_new_source_code import *
 from strange_attractor import *
+from enum import auto
+from strenum import StrEnum
 import numpy as np
 import math
 from colour import Color
