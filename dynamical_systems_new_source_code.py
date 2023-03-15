@@ -2,7 +2,7 @@ from manimlib import *
 import numpy as np
 import math
 import copy
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import List
 from colour import Color
 import random
@@ -25,6 +25,27 @@ COLOR_CODING_SCALE_FACTOR = 0.93
 # TRACE_FADEOUT_DECREASE_FACTOR = 0.2
 LINE_TRACE_OVERLAP_BUFF = 0.02
 # LINE_TRACE_AMOUNT_TO_NOT_FADE_OUT = 0
+
+SOME_VELOCITY_COLORS = {
+    'blue': ['#8ecae6', '#219ebc', '#045a85'], # blues
+    'green1': ['#84a98c', '#52796f', '#354f52'], # greens - alternative last: '#354f52' / alt first: '#cad2c5'
+    'salmon_dont_use': ['#ffcdb2', '#ffb4a2', '#e5989b'], # oranges/salmon
+    'teal1': ['#bdc7b7', '#69a297', '#487481'], # teals?
+    'magenta': ['#dca2ad', '#ce7d8d', '#b9465c'], # 
+    'purple1': ['#a189a9', '#7c6783', '#56445d'], # purple ish
+    'purple2': ['#b196cc', '#916bb7', '#69458d'], # purple ish v2 - chen lee here
+    'green2': ['#30bb7d', '#269563', '#12462f'],#, # greens
+    'teal2': ['#a3c9a8', '#69a297', '#50808e'], # teals?
+    'yellow_red_pastel': ['#dbf76a', '#f7cd6a', '#f7866a'],
+    # 'yellow_red_pastel': ['#9fcf89', '#f7cd6a', '#f7866a']
+    'blue2': ['#64b6dd', '#219ebc', '#023047'],
+    'terracota': ['#9a8c98', '#4a4e69', '#414170'],
+    'teal3': ['#00a896', '#028090', '#05668d'],
+    'green3_very_dark': ['#52796f', '#354f52', '#2f3e46'],
+    'green3_very_dark2': ['#72a094', '#4a6f72', '#374851'],
+    'green4_similar_to_teal1': ['#84a98c', '#52796f', '#354f52'],
+    'dark_purple': ['#808c79', '#958c9c', '#4d4651'],
+}
 
 
 
@@ -66,6 +87,7 @@ BASE_STYLE = DynamicalSystemStyle(
     trace_fadeout_decrease_factor = 0.05,
     amount_to_not_fade_out_trace_before = 5,
     line_trace_overlap_buff=0.02,
+    max_number_of_trace_lines=500,
     # [int] How many times to split dt in a single frame to add more steps to the approximation.
     # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
     precision_multiplier_if_trace_too_rough=1,
@@ -87,18 +109,20 @@ PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
 
 
 
-class PointAndTrace(VMobject):
+class PointAndTrace:
     def __init__(self, point, trace, **kwargs):
-        super().__init__(**kwargs)
-        self.add(trace, point)
+        # super().__init__(**kwargs)
+        # self.add(trace, point)
+        self.point = point
+        self.trace = trace
 
-    @property
-    def trace(self):
-        return self.submobjects[0]
+    # @property
+    # def trace(self):
+    #     return self.submobjects[0]
 
-    @property
-    def point(self):
-        return self.submobjects[1]
+    # @property
+    # def point(self):
+    #     return self.submobjects[1]
 
 
 
@@ -147,13 +171,16 @@ class BaseDynamicalSystemClass(VGroup):
         if fade_out_trace:
             self.sum_of_trace_line_lengths = 0
             self.first_index_not_to_fade_out = None
+            self.sum_of_all_trace_lines = 0
             self.sum_of_trace_lines_not_faded_out = 0
 
         if color_code_velocity:
             assert len(self.velocity_colors) == 3, "Must take exactly three colors for coloring velocity"
 
+            slow_to_med_color_weight = 1
             # Two ways of generating the color code limit, i.e. the value after which
             # lines are painted in the last color.
+            # TODO: update comments to include manual color coding
             if color_code_velocity == 'from_trace':
                 # This way simulates updates to the system a bunch of times
                 # and uses the maximum of all those values to calculate the limit
@@ -184,24 +211,46 @@ class BaseDynamicalSystemClass(VGroup):
                     ) * COLOR_CODING_SCALE_FACTOR
             elif color_code_velocity == 'manual':
                 color_coding_limit = self.velocity_colors[2][1]
+                # slow_to_med_color_weight should be the percentage of the color coding limit
+                # over which to calculate the slow_to_med gradient (higher percentage means
+                # higher thresholds for slow color)
+                slow_to_med_color_weight = self.velocity_colors[0][1]
             else:
                 raise AssertionError("unsupported color_code_velocity type")
-
+            
             self.velocity_colors = [Color(c[0]) for c in self.velocity_colors]
+            # color_slow_to_med = list(self.velocity_colors[0].range_to(self.velocity_colors[1], COLOR_CODING_VARIETY + math.floor(slow_to_med_color_weight*COLOR_CODING_VARIETY)))
+            # color_med_to_fast = list(self.velocity_colors[1].range_to(self.velocity_colors[2], COLOR_CODING_VARIETY - math.floor(slow_to_med_color_weight*COLOR_CODING_VARIETY)))
             color_slow_to_med = list(self.velocity_colors[0].range_to(self.velocity_colors[1], COLOR_CODING_VARIETY))
             color_med_to_fast = list(self.velocity_colors[1].range_to(self.velocity_colors[2], COLOR_CODING_VARIETY))
             colors = color_slow_to_med + color_med_to_fast[1:]
-            step = color_coding_limit / len(colors)
-            self.color_mappings = list(zip(colors,np.arange(0, color_coding_limit + step/2, step)))
+
+            if slow_to_med_color_weight == 0:
+                step = color_coding_limit / len(colors)           
+                value_range = np.arange(0, color_coding_limit + step/2, step)
+            else:
+                weighted_half_color_coding_limit = slow_to_med_color_weight*color_coding_limit
+                slow_to_med_step = weighted_half_color_coding_limit / (len(color_slow_to_med) - 1)
+                med_to_fast_step = (color_coding_limit - weighted_half_color_coding_limit) / len(color_med_to_fast)
+                slow_to_med_values = list(np.arange(0, weighted_half_color_coding_limit + slow_to_med_step/2, slow_to_med_step))[1:]
+                med_to_fast_values = list(np.arange(weighted_half_color_coding_limit + med_to_fast_step, color_coding_limit + med_to_fast_step/2, med_to_fast_step))
+                value_range = slow_to_med_values + med_to_fast_values
+
+            self.color_mappings = list(zip(colors, value_range))
             self.color_mappings.reverse()
 
 
-        point = SurfaceMesh(Sphere(), resolution=(5, 5), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)#, radius=)
-        # point = Dot( radius=self.point_radius).move_to(self.init_pos_vector)#, radius=self.point_radius)
+        # self.unused_traces_repository = [Line(stroke_opacity=0, fill_opacity=0) for _ in range(300)]
+        # self.scene.add(*(self.unused_traces_repository))
+        point = SurfaceMesh(Sphere(), resolution=(10, 10), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)
+        # point = Dot(radius=self.point_radius).move_to(self.init_pos_vector)#, radius=self.point_radius)
 
+        # TODO: See if high mesh resolution affects render time severely
+        
         trace = self.get_base_trace(color_code_velocity)
         self.point_and_trace = PointAndTrace(point, trace)
         self.trace_update_function = self.get_trace_update_function()
+        self.unused_traces_repository = []
 
         self.build_solution()
 
@@ -209,12 +258,16 @@ class BaseDynamicalSystemClass(VGroup):
 
 
     def add_to_scene(self):
-        self.scene.add(self.point_and_trace)
-        # self.scene.bring_to_front(self.point_and_trace.trace)
+        # self.scene.add(self.point_and_trace)
+        self.scene.add(self.point_and_trace.point, self.point_and_trace.trace)
+        self.scene.bring_to_front(self.point_and_trace.trace)
         # self.scene.bring_to_front(self.point_and_trace.point)
 
         if not self.show_point:
             self.point_and_trace.point.set_opacity(0)
+
+    def remove_from_scene(self):
+        self.scene.remove(self.point_and_trace.point, self.point_and_trace.trace)
 
 
     def get_base_trace(self, color_code_velocity=False):
@@ -258,31 +311,103 @@ class BaseDynamicalSystemClass(VGroup):
             stroke_width=self.width,
             stroke_opacity=self.stroke_opacity
         )
-        trace.add(new_line)
+        trace.submobjects.append(new_line)
+        trace.family.insert(0, new_line)
+        trace.refresh_has_updater_status()
+        trace.refresh_bounding_box()
+
+        # trace.family[1] = it.chain(trace.family[1], [new_line])
+        # trace.family = [trace] + trace.submobjects
+        # print(len(trace.family), trace.family[:3])
+        # trace.assemble_family()
+        # trace.add(new_line)
 
     def add_line_objects_to_trace_and_fade_out(self, trace, coords, last_coords):
         # Assuming trace is a VGroup object
         new_position = self.get_new_line_position(coords, last_coords)
-        new_line = Line(
-            new_position[0],
-            new_position[1],
-            color=self.get_trace_color(),
-            stroke_width=self.width,
-            stroke_opacity=self.stroke_opacity
-        )
+        if self.unused_traces_repository:
+            color = np.array([color_to_rgb(self.get_trace_color())])
+            new_line = self.unused_traces_repository.pop(0).set_points_as_corners(
+                [new_position[0], new_position[1]]
+            )
+            new_line.data['fill_rgba'][:, :3] = color # Set color to fill
+            new_line.data['fill_rgba'][:, 3] = 1 # Set opacity to fill
+            new_line.data['stroke_rgba'][:, :3] = color # Set color to stroke
+            new_line.data['stroke_rgba'][:, 3] = 1 # Set opacity to stroke
+            new_line.data['stroke_width'] = np.array([[float(self.width)]])
+
+
+            # new_line = self.unused_traces_repository.pop(0).set_points_by_ends(
+            #     new_position[0], 
+            #     new_position[1]
+            # ).set_fill(
+            #     opacity=1,
+            #     color=self.get_trace_color(),
+            # ).set_stroke(
+            #     opacity=1,
+            #     width=self.width,
+            #     color=self.get_trace_color()
+            # )
+
+            #set_opacity(1)#.set_stroke(width=self.width)#.set_color(self.get_trace_color())
+            # new_line.stroke_width = self.width
+            # new_line.color = self.get_trace_color()
+            # new_line.opacity = 1
+
+        else:
+            new_line = Line(
+                new_position[0],
+                new_position[1],
+                color=self.get_trace_color(),
+                stroke_width=self.width,
+                stroke_opacity=self.stroke_opacity
+            )
+            # self.scene.add(new_line)
+            # print('      > added new line')
+
+
+        # current_time = time.process_time()
+        current_time = time.process_time()
 
         trace.add(new_line)
+
+        # trace.submobjects.append(new_line)
+        # trace.family.insert(0, new_line)
+        # trace.refresh_has_updater_status()
+        # trace.refresh_bounding_box()
+
+        # time_to_add_trace = time.process_time() - current_time
         # print('\n')
         # print("Sum of lengths:", round(self.sum_of_trace_lines_not_faded_out, 3), "First index not fadeout:", self.first_index_not_to_fade_out, "Trace length:", len(trace.submobjects))
         self.sum_of_trace_lines_not_faded_out += np.linalg.norm(new_line.get_vector(), 2)
+        self.sum_of_all_trace_lines += np.linalg.norm(new_line.get_vector(), 2)
         # print("New sum of trace lenghts:", self.sum_of_trace_lines_not_faded_out)
 
         trace_length = len(trace.submobjects)
         # print("trace length", trace_length)
         # print('Length of new line:', np.linalg.norm(new_line.get_vector(), 2))
+        non_faded_out_trace_length = trace_length if self.first_index_not_to_fade_out is None else len(trace.submobjects[self.first_index_not_to_fade_out:])
 
+        should_fade_out_something = self.sum_of_all_trace_lines >= self.amount_to_not_fade_out_trace_before or non_faded_out_trace_length > self.max_number_of_trace_lines
+
+        # print("\nis over threshold?", self.sum_of_trace_lines_not_faded_out >= self.amount_to_not_fade_out_trace_before, f" (sum of trace lengths: {self.sum_of_trace_lines_not_faded_out})")
+        # print("is length too long?", non_faded_out_trace_length > self.max_number_of_trace_lines, f" (length: {non_faded_out_trace_length})")
+        # print("first_index_not_to_fade_out is: ", self.first_index_not_to_fade_out)
+        # print("total length:", sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects))
+        # print("should fade out something:", should_fade_out_something)
+
+        # if non_faded_out_trace_length > self.max_number_of_trace_lines:
+        #     # self.first_index_not_to_fade_out = trace_length - self.max_number_of_trace_lines
+        #     if self.first_index_not_to_fade_out is None:
+        #         self.first_index_not_to_fade_out = 0
+        #     else:
+        #         self.first_index_not_to_fade_out += 1
+        #     print("TRACE_LENGTH EXCEEDED - new first-index-not-to:", self.first_index_not_to_fade_out, non_faded_out_trace_length)
         if self.first_index_not_to_fade_out is None:
             # print("first_index_not_to_fade_out is None for now")
+            if non_faded_out_trace_length > self.max_number_of_trace_lines:
+                self.first_index_not_to_fade_out = 1
+
             partial_sum_of_trace_line_lengths = 0
             for i in range(1, trace_length + 1):
                 partial_sum_of_trace_line_lengths += np.linalg.norm(trace.submobjects[-i].get_vector(), 2)
@@ -293,36 +418,46 @@ class BaseDynamicalSystemClass(VGroup):
                     break
         else:
             # print("first_index_not_to_fade_out is NOT None - and is", self.first_index_not_to_fade_out)
-            if self.sum_of_trace_lines_not_faded_out >= self.amount_to_not_fade_out_trace_before:
+            if self.sum_of_trace_lines_not_faded_out >= self.amount_to_not_fade_out_trace_before or non_faded_out_trace_length > self.max_number_of_trace_lines:
                 # print("New line causes to exceed fadeout threshold")
-                a = self.sum_of_trace_lines_not_faded_out
-                found_value = False
-                for i in range(1, trace_length - self.first_index_not_to_fade_out + 1):
-                    # print(trace_length - self.first_index_not_to_fade_out + 1)
-                    # print("---- Checking where to increase first_index_not_to_fade_out - currently on", self.first_index_not_to_fade_out + i - 1)
-                    # print(a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2) for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)))
-                    if a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2)
-                        for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)
-                    ) <= self.amount_to_not_fade_out_trace_before:
-                        found_value = True
-                        # print(self.first_index_not_to_fade_out + i)
-                        # self.sum_of_trace_lines_not_faded_out -= np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2)
-                        self.first_index_not_to_fade_out += i
-                        # print("first_index_not_to_fade_out increased by", i, " - now is", self.first_index_not_to_fade_out)
-                        break
-                    # else:
-                        # self.sum_of_trace_lines_not_faded_out -= np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2)
-                if not found_value:
-                    # print("Last value alone is bigger than threshold?")
-                    self.first_index_not_to_fade_out = trace_length - 1
-            else:         
-                pass   
+                if self.sum_of_trace_lines_not_faded_out < self.amount_to_not_fade_out_trace_before:
+                    self.first_index_not_to_fade_out += 1
+                else:
+                    a = self.sum_of_trace_lines_not_faded_out
+                    found_value = False
+                    for i in range(1, trace_length - self.first_index_not_to_fade_out + 1):
+                        # print("---- Checking where to increase first_index_not_to_fade_out - currently on", self.first_index_not_to_fade_out + i - 1)
+                        # print("     > length of this line:", np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2))
+                        # print("     > sum up to this vector:", a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2) for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)))
+                        if a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2)
+                            for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)
+                        ) <= self.amount_to_not_fade_out_trace_before:
+                            found_value = True
+                            self.first_index_not_to_fade_out += i
+                            # print("first_index_not_to_fade_out increased by", i, " - now is", self.first_index_not_to_fade_out)
+                            break
+                        # elif self.first_index_not_to_fade_out + i > self.max_number_of_trace_lines:
+                        #     found_value = True
+                        #     self.first_index_not_to_fade_out += i
+                        #     print(f"Trace too long! {trace_length=}, first_index_not_to_fade_out={self.first_index_not_to_fade_out}")
+                        # else:
+                            # self.sum_of_trace_lines_not_faded_out -= np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2)
+                    if not found_value:
+                        # print("Last value alone is bigger than threshold?")
+                        if non_faded_out_trace_length > self.max_number_of_trace_lines:
+                            self.first_index_not_to_fade_out += 1
+                            print("TRACE_LENGTH EXCEEDED - new first-index-not-to:", self.first_index_not_to_fade_out, non_faded_out_trace_length)
+                        else:
+                            self.first_index_not_to_fade_out = trace_length - 1
+            else:
+                # self.first_index_not_to_fade_out = 0
                 # print("Sum of trace lengths NOT BIGGER THAN THRESHOLD")
+                pass
             self.sum_of_trace_lines_not_faded_out = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects[self.first_index_not_to_fade_out:])
+            self.sum_of_all_trace_lines = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects)
 
-                
         
-        if self.first_index_not_to_fade_out is not None:
+        if self.first_index_not_to_fade_out is not None and should_fade_out_something:
             # print("Iterating through lines to see which ones to fade out completely...")
             for i in range(1, self.first_index_not_to_fade_out + 1):
                 index = self.first_index_not_to_fade_out - i
@@ -330,18 +465,10 @@ class BaseDynamicalSystemClass(VGroup):
                 if opacity <= self.trace_fadeout_decrease_factor:
                     # print("Will delete everything before line", index)
                     trace.submobjects[index].set_opacity(0)
-                    # norms_of_faded_out = sum(
-                    #     np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects[:index+1]
-                    # )
-                    # norms_of_all_faded_out_at_least_some = norms_of_faded_out + sum(
-                    #     np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects[index+1:self.first_index_not_to_fade_out]
-                    # )
-                    # # self.sum_of_trace_line_lengths -= norms_of_faded_out
-                    # # self.sum_of_trace_lines_not_faded_out -= norms_of_all_faded_out_at_least_some
+                    self.unused_traces_repository += self.point_and_trace.trace.submobjects[:index+1]
                     self.point_and_trace.trace.submobjects = self.point_and_trace.trace.submobjects[index+1:]
                     self.first_index_not_to_fade_out -= index
                     break
-                    # self.first_index_not_to_fade_out = self.first_index_not_to_fade_out - i + 1
                 else:
                     # print("Faded out a bit line", index)
                     trace.submobjects[index].set_opacity(
@@ -350,6 +477,10 @@ class BaseDynamicalSystemClass(VGroup):
                     trace.submobjects[index].set_stroke(
                         width=trace.submobjects[index].get_stroke_width() * (1 - self.trace_fadeout_decrease_factor)
                     )
+
+        # print(f"Time to add trace: {time_to_add_trace}")
+        # print(f"Time to calc. ind: {time.process_time() - time_to_add_trace - current_time}")
+        # print(f"       Total time: {time.process_time() - current_time}\n")
 
 
     def add_corners_to_trace(self, trace, coords):
@@ -363,6 +494,7 @@ class BaseDynamicalSystemClass(VGroup):
         if self.color_code_velocity:
             vec = self.get_np_array_from_list(self.apply_functions_to_point(self.coords))
             val = np.linalg.norm(vec, 2)
+            # print(val)
             for color, limit in self.color_mappings:
                 if val > limit:
                     return color
@@ -551,8 +683,8 @@ class DynamicalSystemSnapshot(BaseDynamicalSystemClass):
         self.backward_trace = self._build_solution_piece(is_forward=False)
         self.extreme_point_backward = self.get_np_array_from_list(copy.deepcopy(self.coords))
 
-        self.point_and_trace.trace = VGroup(self.point_and_trace.trace, self.backward_trace, self.forward_trace)
-        self.point_and_trace.point.move_to(self.extreme_point_forward)
+        self.trace = VGroup(self.point_and_trace.trace, self.backward_trace, self.forward_trace)
+        self.point = SurfaceMesh(Sphere(), resolution=(5, 5), color=self.point_color).scale(self.point_radius).move_to(self.extreme_point_forward)
 
 
     def _build_solution_piece(self, is_forward, time_delta=DEFAULT_TIME_DELTA):
@@ -575,16 +707,31 @@ class DynamicalSystemSnapshot(BaseDynamicalSystemClass):
 
         sum_of_coords = ORIGIN
 
+        import time
+        time_sum = 0
+
+        ITERATION_MODULUS = 1000
+
         for i in range(n_of_iterations):
             # if i % 100 == 0:
             #     print(sum_of_coords / i)
             #     # print(len(self.d_list[0]), "iterations", "Average point:", np.array([sum(self.d_list[i]) for i in [0,1,2]]) / len(self.d_list[0]))
-            if should_log_build_progress and i % 100 == 0 and i != 0:
+            if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
                 print(i)
             sum_of_coords += self.last_coords
             self.last_coords = self.copy_coords(self.last_coords, self.coords)
             self.coords = self.update_coords(self.coords, dt if is_forward else -dt)
+
+            current_time = time.process_time()
+            # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
+            #     print(f"Adding line to trace")
             self.update_trace(trace, self.coords, self.last_coords)
+            time_sum += time.process_time() - current_time
+            # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
+            #     print(f"Added line! - this batch took {time_sum} seconds\n")
+
+            if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
+                time_sum = 0
 
         if should_log_build_progress:
             print("Done building piece!")
@@ -629,6 +776,18 @@ class DynamicalSystemSnapshot(BaseDynamicalSystemClass):
             color=self.flow_box_trace_color,
             width=self.flow_box_trace_width
         )
+
+    def add_to_scene(self):
+        self.scene.add(self.trace, self.point)
+        for m in self.trace.submobjects:
+            self.scene.add(m)
+
+        if not self.show_point:
+            self.point_and_trace.point.set_opacity(0)
+
+    def remove_from_scene(self):
+        self.scene.remove(self.trace, self.point)
+
 
 
 
@@ -697,7 +856,11 @@ class DynamicalSystem(BaseDynamicalSystemClass):
                 for i in range(mult - 2):
                     self.update_trace(trace, self.second_to_last_coords[i], self.second_to_last_coords[i+1])
             self.update_trace(trace, self.last_coords, self.second_to_last_coords[mult-2])
+
+
         self.update_trace(trace, self.coords, self.last_coords)
+        self.scene.bring_to_front(self.point_and_trace.trace)
+
         # print("Trace updated - moved to", [round(c, 7) for c in self.coords], "from", [round(c, 7) for c in self.last_coords], '\n')
             
     def get_point_and_trace(self, point_and_trace, dt):
@@ -710,9 +873,9 @@ class DynamicalSystem(BaseDynamicalSystemClass):
 
 
     def build_solution(self):
-        self.point_and_trace.add_updater(self.point_and_trace_func)
-        # self.point_and_trace.point.add_updater(self.get_point_func)
-        # self.point_and_trace.trace.add_updater(self.get_trace_func)
+        # self.point_and_trace.add_updater(self.point_and_trace_func)
+        self.point_and_trace.point.add_updater(self.get_point_func)
+        self.point_and_trace.trace.add_updater(self.get_trace_func)
 
 
     def pause_update(self):
