@@ -44,7 +44,7 @@ SOME_VELOCITY_COLORS = {
     'green3_very_dark': ['#52796f', '#354f52', '#2f3e46'],
     'green3_very_dark2': ['#72a094', '#4a6f72', '#374851'],
     'green4_similar_to_teal1': ['#84a98c', '#52796f', '#354f52'],
-    'dark_purple': ['#808c79', '#958c9c', '#4d4651'],
+    'dark_purple': ['#808c79', '#958c9c', '#423c45',]# '#4d4651'],
 }
 
 
@@ -713,20 +713,57 @@ class DynamicalSystemSnapshot(BaseDynamicalSystemClass):
         ITERATION_MODULUS = 1000
 
         for i in range(n_of_iterations):
-            # if i % 100 == 0:
-            #     print(sum_of_coords / i)
-            #     # print(len(self.d_list[0]), "iterations", "Average point:", np.array([sum(self.d_list[i]) for i in [0,1,2]]) / len(self.d_list[0]))
-            if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
-                print(i)
-            sum_of_coords += self.last_coords
-            self.last_coords = self.copy_coords(self.last_coords, self.coords)
-            self.coords = self.update_coords(self.coords, dt if is_forward else -dt)
 
-            current_time = time.process_time()
+            if i % 1000 == 0 and i != 0:
+                print(f"Average point: {sum_of_coords / i}") # Average point
+            
+            if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
+                print(f"{i} iterations completed")
+                
+            sum_of_coords += self.last_coords
+
+            maybe_updated_coords = self.update_coords(copy.deepcopy(self.coords), dt)
+            self.is_updated_coord_too_far = np.linalg.norm(
+                self.get_np_array_from_list(maybe_updated_coords) - self.get_np_array_from_list(self.last_coords),
+                2
+            ) > 0.15
+
+            if self.is_updated_coord_too_far:
+                for i in range(self.precision_multiplier_if_trace_too_rough - 1):
+                    mult = self.precision_multiplier_if_trace_too_rough
+                    self.last_coords = self.copy_coords(self.last_coords, self.coords)
+                    self.coords = self.update_coords(self.coords, dt/mult)
+
+                    self.second_to_last_coords[i] = self.copy_coords(self.second_to_last_coords[i], self.last_coords)
+                    # point = point.move_to(self.get_np_array_from_list(self.adapt_dimensions(self.last_coords)))
+
+            self.last_coords = self.copy_coords(self.last_coords, self.coords)
+            self.coords = self.update_coords(self.coords, dt/self.precision_multiplier_if_trace_too_rough if self.is_updated_coord_too_far else dt)
+
+
+            # self.last_coords = self.copy_coords(self.last_coords, self.coords)
+            # self.coords = self.update_coords(self.coords, dt if is_forward else -dt)
+
+            # current_time = time.process_time()
             # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
             #     print(f"Adding line to trace")
+
+
+            # self.update_trace(trace, self.coords, self.last_coords)            
+
+            if len(self.second_to_last_coords) > 0 and self.is_updated_coord_too_far:
+                mult = self.precision_multiplier_if_trace_too_rough
+                if mult > 1:
+                    for i in range(mult - 2):
+                        self.update_trace(trace, self.second_to_last_coords[i], self.second_to_last_coords[i+1])
+                self.update_trace(trace, self.last_coords, self.second_to_last_coords[mult-2])
+
+
             self.update_trace(trace, self.coords, self.last_coords)
-            time_sum += time.process_time() - current_time
+            # self.scene.bring_to_front(self.point_and_trace.trace)
+
+
+            # time_sum += time.process_time() - current_time
             # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
             #     print(f"Added line! - this batch took {time_sum} seconds\n")
 
