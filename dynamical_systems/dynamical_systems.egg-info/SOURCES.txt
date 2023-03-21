@@ -1,0 +1,11 @@
+README.md
+setup.py
+dynamical_systems/__init__.py
+dynamical_systems/color_tester.py
+dynamical_systems/dynamical_systems_new_source_code.py
+dynamical_systems/expanded_3d_scene.py
+dynamical_systems/strange_attractor.py
+dynamical_systems.egg-info/PKG-INFO
+dynamical_systems.egg-info/SOURCES.txt
+dynamical_systems.egg-info/dependency_links.txt
+dynamical_systems.egg-info/top_level.txt
