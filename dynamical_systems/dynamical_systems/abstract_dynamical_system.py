@@ -69,6 +69,7 @@ PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
 # TODO: Remove DynamicalSystemStyle class in favor of dicts
 # TODO: Eradicate PointAndTrace
 # TODO: update color coding comments to include manual color coding
+# TODO: See if high mesh point resolution affects render time severely
 
 
 
@@ -116,7 +117,7 @@ class AbstractDynamicalSystem(VGroup):
 
         self.coords = copy.deepcopy(list(init_pos)) # Will store the current position of the system
         self.last_coords = copy.deepcopy(list(init_pos)) # Will store the last position of the system
-        # TODO: Implement this for snapshots
+
         self.is_updated_coord_too_far = False
         self.second_to_last_coords = [copy.deepcopy(list(init_pos)) for _ in range(self.precision_multiplier_if_trace_too_rough - 1)]
 
@@ -130,13 +131,11 @@ class AbstractDynamicalSystem(VGroup):
 
         self._setup_color_mappings()
 
-        # self.unused_traces_repository = [Line(stroke_opacity=0, fill_opacity=0) for _ in range(300)]
-        # self.scene.add(*(self.unused_traces_repository))
-        point = SurfaceMesh(Sphere(), resolution=(10, 10), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)
-        # point = Dot(radius=self.point_radius).move_to(self.init_pos_vector)#, radius=self.point_radius)
+        if self.dimension == 2:
+            point = Dot(radius=self.point_radius).move_to(self.init_pos_vector)
+        else:
+            point = SurfaceMesh(Sphere(), resolution=(10, 10), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)
 
-        # TODO: See if high mesh resolution affects render time severely
-        
         trace = self.get_base_trace(color_code_velocity)
         self.point_and_trace = PointAndTrace(point, trace)
         self.trace_update_function = self.get_trace_update_function()
@@ -150,9 +149,8 @@ class AbstractDynamicalSystem(VGroup):
     def _setup_color_mappings(self):
         if self.color_code_velocity:
             assert len(self.velocity_colors) == 3, "Must take exactly three colors for coloring velocity"
-
+            
             slow_to_med_color_weight = 1
-
             # A few ways of automatically generating the color code limit, i.e. the value
             # after which lines are painted in the color associated ot the highest velocity.
             if self.color_code_velocity == 'from_trace':
@@ -173,7 +171,7 @@ class AbstractDynamicalSystem(VGroup):
             color_med_to_fast = list(self.velocity_colors[1].range_to(self.velocity_colors[2], DS_COLOR_CODING_VARIETY))
             colors = color_slow_to_med + color_med_to_fast[1:]
 
-            if slow_to_med_color_weight == 0:
+            if slow_to_med_color_weight == 1:
                 step = color_coding_limit / len(colors)           
                 value_range = np.arange(0, color_coding_limit + step/2, step)
             else:
@@ -186,6 +184,7 @@ class AbstractDynamicalSystem(VGroup):
 
             self.color_mappings = list(zip(colors, value_range))
             self.color_mappings.reverse()
+
 
     def _get_color_coding_limit_from_trace_simulation(self):
         """Generates a color coding limit by iteratively updating the system's
@@ -201,6 +200,7 @@ class AbstractDynamicalSystem(VGroup):
         # Equilibrium points would result in a color coding limit of 0,
         # which we can't have currently
         return color_coding_limit if color_coding_limit > 0 else 0.01
+
 
     def _get_color_coding_limit_from_plane_points(self):
         """Generates a color coding limit by applying the system functions once
