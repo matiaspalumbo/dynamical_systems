@@ -1,4 +1,6 @@
 from manimlib import Rotation
+from manimlib.constants import *
+from dynamical_systems.abstract_dynamical_system import DynamicalSystemStyle
 import numpy as np
 
 
@@ -34,7 +36,39 @@ DS_COLOR_CODING_VARIETY = 20
 DS_COLOR_CODING_SCALE_FACTOR = 0.93
 
 
-"""Color-related constants"""
+"""Style-related constants"""
+
+BASE_STYLE = DynamicalSystemStyle(
+    speed_rate = 1, # Larger speed rate results in less smoothness
+    color = '#3e99a0', # Main system trace color
+    width = 3.2, # Main system trace width
+    stroke_opacity = 1, # Main system stroke opacity
+    point_radius = 0.05,
+    point_color=WHITE,
+    local_section_perp_vector_color = GREEN,
+    local_section_vector_color = GREY,
+    local_section_vec_freq = 4,
+    flow_box_perp_vector_color = PURPLE_E,
+    flow_box_trace_color = PURPLE_A,
+    flow_box_trace_width = 3.2,
+    flow_box_solution_time_domain = [-0.5, 0.5],
+    velocity_colors= [(GREEN, 0), (YELLOW, 5), (RED, 10)], # Each number represents at least how big the derivative must be to color the curve that way
+    trace_fadeout_decrease_factor = 0.05,
+    amount_to_not_fade_out_trace_before = 5,
+    line_trace_overlap_buff=0.02,
+    max_number_of_trace_lines=500,
+    # [int] How many times to split dt in a single frame to add more steps to the approximation.
+    # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
+    precision_multiplier_if_trace_too_rough=1,
+)
+
+PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
+    BASE_STYLE,
+    point_radius=0.035,
+    width=2.8,
+    stroke_opacity=0.65
+)
+
 SOME_VELOCITY_COLORS = {
     'blue': ['#8ecae6', '#219ebc', '#045a85'], # blues
     'green1': ['#84a98c', '#52796f', '#354f52'], # greens - alternative last: '#354f52' / alt first: '#cad2c5'
