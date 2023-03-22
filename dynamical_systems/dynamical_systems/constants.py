@@ -27,6 +27,14 @@ DS_PHASE_PLANE_DEFAULT_STEP = 1
 
 """Velocity color-coding-related constants"""
 
+# Number of iterations of the system to calculate when color coding
+# a system from its trace
+DS_TRACE_COLOR_CODING_N_OF_ITERATIONS = 200
+
+# Number of iterations of the system to calculate when color coding
+# a system from its trace
+DS_PLANE_COLOR_CODING_VALUES_RANGE = 10
+
 # Number of intermediate colors between the given 'slow' and 'medium', and
 # 'medium' and 'fast' colors
 DS_COLOR_CODING_VARIETY = 20
