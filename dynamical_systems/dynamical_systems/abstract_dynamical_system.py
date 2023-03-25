@@ -87,7 +87,7 @@ BASE_STYLE = DynamicalSystemStyle(
     velocity_colors= [(GREEN, 0), (YELLOW, 5), (RED, 10)], # Each number represents at least how big the derivative must be to color the curve that way
     trace_fadeout_decrease_factor = 0.05,
     amount_to_not_fade_out_trace_before = 5,
-    line_trace_overlap_buff=0.02,
+    line_trace_overlap_buff=EXP_3D_SCENE_DEFAULT_TRACE_OVERLAP_BUFF,
     max_number_of_trace_lines=500,
     # [int] How many times to split dt in a single frame to add more steps to the approximation.
     # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
@@ -111,14 +111,6 @@ PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
 # TODO: update color coding comments to include manual color coding
 # TODO: See if high mesh point resolution affects render time severely
 
-
-
-
-
-class PointAndTrace:
-    def __init__(self, point, trace, **kwargs):
-        self.point = point
-        self.trace = trace
 
 
 class AbstractDynamicalSystem(VGroup):
@@ -177,13 +169,15 @@ class AbstractDynamicalSystem(VGroup):
             point = SurfaceMesh(Sphere(), resolution=(10, 10), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)
 
         trace = self.get_base_trace(color_code_velocity)
-        self.point_and_trace = PointAndTrace(point, trace)
+        self.point = point
+        self.trace = trace
+        # self.point_and_trace = PointAndTrace(point, trace)
         self.trace_update_function = self.get_trace_update_function()
         self.unused_traces_repository = []
 
         self.build_solution()
 
-        super().__init__(self.point_and_trace.trace, self.point_and_trace.point)
+        super().__init__(self.trace, self.point)
 
 
     def _setup_color_mappings(self):
@@ -260,16 +254,14 @@ class AbstractDynamicalSystem(VGroup):
             ) * DS_COLOR_CODING_SCALE_FACTOR
 
     def add_to_scene(self):
-        # self.scene.add(self.point_and_trace)
-        self.scene.add(self.point_and_trace.point, self.point_and_trace.trace)
-        self.scene.bring_to_front(self.point_and_trace.trace)
-        # self.scene.bring_to_front(self.point_and_trace.point)
+        self.scene.add(self.point, self.trace)
+        self.scene.bring_to_front(self.trace)
 
         if not self.show_point:
-            self.point_and_trace.point.set_opacity(0)
+            self.point.set_opacity(0)
 
     def remove_from_scene(self):
-        self.scene.remove(self.point_and_trace.point, self.point_and_trace.trace)
+        self.scene.remove(self.point, self.trace)
 
     def get_base_trace(self, color_code_velocity=False):
         parameters = dict(
@@ -435,8 +427,8 @@ class AbstractDynamicalSystem(VGroup):
                 if opacity <= self.trace_fadeout_decrease_factor:
                     # print("Will delete everything before line", index)
                     trace.submobjects[index].set_opacity(0)
-                    self.unused_traces_repository += self.point_and_trace.trace.submobjects[:index+1]
-                    self.point_and_trace.trace.submobjects = self.point_and_trace.trace.submobjects[index+1:]
+                    self.unused_traces_repository += self.trace.submobjects[:index+1]
+                    self.trace.submobjects = self.trace.submobjects[index+1:]
                     self.first_index_not_to_fade_out -= index
                     break
                 else:
@@ -569,7 +561,7 @@ class AbstractDynamicalSystem(VGroup):
         line_start_tip = Dot(line_start, color=section_color, radius=0.035)
         line_end_tip = Dot(line_end, color=section_color, radius=0.035)
         section_perp_line = VGroup(section_perp_line, line_start_tip, line_end_tip)
-        section_center = Dot(pos, radius=self.point_and_trace.point_radius, color=self.local_section_vector_color)
+        section_center = Dot(pos, radius=self.point_radius, color=self.local_section_vector_color)
 
         # Number of vectors to draw for each orientation (up, down), and the vectors (anchors) in question
         vec_freq = self.local_section_vec_freq

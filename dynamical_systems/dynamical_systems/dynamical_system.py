@@ -43,7 +43,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
         self.backward_trace = self._build_solution_piece(is_forward=False)
         self.extreme_point_backward = self.get_np_array_from_list(copy.deepcopy(self.coords))
 
-        self.trace = VGroup(self.point_and_trace.trace, self.backward_trace, self.forward_trace)
+        self.trace = VGroup(self.trace, self.backward_trace, self.forward_trace)
         self.point = SurfaceMesh(Sphere(), resolution=(5, 5), color=self.point_color).scale(self.point_radius).move_to(self.extreme_point_forward)
 
 
@@ -118,10 +118,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
                         self.update_trace(trace, self.second_to_last_coords[i], self.second_to_last_coords[i+1])
                 self.update_trace(trace, self.last_coords, self.second_to_last_coords[mult-2])
 
-
             self.update_trace(trace, self.coords, self.last_coords)
-            # self.scene.bring_to_front(self.point_and_trace.trace)
-
 
             # time_sum += time.process_time() - current_time
             # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
@@ -144,8 +141,8 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
         self.backward_trace = self._build_solution_piece(is_forward=False, time_delta=time_delta)
         self.extreme_point_backward = self.get_np_array_from_list(copy.deepcopy(self.coords))
 
-        self.point_and_trace.trace = VGroup(self.point_and_trace.trace, self.backward_trace, self.forward_trace)
-        self.point_and_trace.point.move_to(self.extreme_point_forward)
+        self.trace = VGroup(self.trace, self.backward_trace, self.forward_trace)
+        self.point.move_to(self.extreme_point_forward)
 
 
     def add_local_section(self, is_flow_box=False):
@@ -180,11 +177,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
             self.scene.add(m)
 
         if not self.show_point:
-            self.point_and_trace.point.set_opacity(0)
-
-    def remove_from_scene(self):
-        self.scene.remove(self.trace, self.point)
-
+            self.point.set_opacity(0)
 
 
 
@@ -208,7 +201,6 @@ class DynamicalSystem(AbstractDynamicalSystem):
         self.d_list = [[pos_coord] for pos_coord in init_pos] # list of (x,y) coords of the system
         self.get_point_func = self.get_point
         self.get_trace_func = self.get_trace
-        self.point_and_trace_func = self.get_point_and_trace
 
         super().__init__(scene, init_pos, dx, dy, dz, show_point, color_code_velocity, fade_out_trace, style, **kwargs)
 
@@ -256,23 +248,15 @@ class DynamicalSystem(AbstractDynamicalSystem):
 
 
         self.update_trace(trace, self.coords, self.last_coords)
-        self.scene.bring_to_front(self.point_and_trace.trace)
+        self.scene.bring_to_front(self.trace)
 
         # print("Trace updated - moved to", [round(c, 7) for c in self.coords], "from", [round(c, 7) for c in self.last_coords], '\n')
-            
-    def get_point_and_trace(self, point_and_trace, dt):
-        # print(len(self.point_and_trace.trace.submobjects))
-        if dt > 0.2:
-            dt = 0
-        new_point = self.get_point(point_and_trace.point, dt)
-        self.get_trace(point_and_trace.trace)
-        return PointAndTrace(new_point, point_and_trace.trace)
 
 
     def build_solution(self):
         # self.point_and_trace.add_updater(self.point_and_trace_func)
-        self.point_and_trace.point.add_updater(self.get_point_func)
-        self.point_and_trace.trace.add_updater(self.get_trace_func)
+        self.point.add_updater(self.get_point_func)
+        self.trace.add_updater(self.get_trace_func)
 
 
     def pause_update(self):
@@ -448,6 +432,9 @@ class DynamicalSystemFamily:
         for system in self.systems:
             system.add_to_scene()
 
+    def remove_from_scene(self):
+        for system in self.systems:
+            system.remove_from_scene()
 
     def generate_color_gradient(self, colors: List[Color]):
         if isinstance(colors, str) or isinstance(colors, Color):
