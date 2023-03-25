@@ -6,7 +6,6 @@ from manimlib import *
 from dynamical_systems.constants import *
 
 from enum import IntEnum
-from typing import List
 from colour import Color
 
 
@@ -18,17 +17,56 @@ class Coords(IntEnum):
 
 
 class DynamicalSystemStyle:
+    VALID_ATTRS = [
+        'speed_rate',
+        'color',
+        'width',
+        'stroke_opacity',
+        'point_radius',
+        'point_color',
+        'local_section_perp_vector_color',
+        'local_section_vector_color',
+        'local_section_vec_freq',
+        'flow_box_perp_vector_color',
+        'flow_box_trace_color',
+        'flow_box_trace_width',
+        'flow_box_solution_time_domain',
+        'velocity_colors',
+        'trace_fadeout_decrease_factor',
+        'amount_to_not_fade_out_trace_before',
+        'line_trace_overlap_buff',
+        'max_number_of_trace_lines',
+        'precision_multiplier_if_trace_too_rough',
+    ]
+
     def __init__(self, **kwargs):
-        self.style = kwargs
+        self._init_traits()
+        for trait, value in kwargs.items():            
+            if trait not in self.VALID_ATTRS:
+                raise Exception(f'Unsupported style attribute: {trait}')
+            self.__dict__[trait] = value
+
+    def _init_traits(self):
+        for trait in self.VALID_ATTRS:
+            self.set_value(trait, None)
+
+    def as_dict(self):
+        return {trait: self.get_value(trait) for trait in self.VALID_ATTRS}
     
+    def get_value(self, trait):
+        return self.__dict__[trait]
+
+    def set_value(self, trait, value):
+        self.__dict__[trait] = value
+
     @classmethod
     def from_existing_style(cls, dynamical_system_style, **kwargs):
-        new_style = copy.deepcopy(dynamical_system_style.style)
+        new_style = dynamical_system_style.as_dict()
         new_style.update(kwargs)
         return cls(**new_style)
 
     def __str__(self):
-        return str(self.style)
+        return str(self.as_dict())
 
 
 
@@ -64,6 +102,8 @@ PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
 )
 
 
+# TODO: Make style parameters to be only accessed through the 'style' attribute of the system, not as regular attributes
+
 # TODO: implement using coords_to_point when showing phase planes
 # TODO: stop using python lists and np.arrays at the same time
 # TODO: Remove DynamicalSystemStyle class in favor of dicts
@@ -94,10 +134,10 @@ class AbstractDynamicalSystem(VGroup):
         show_point=True, 
         color_code_velocity=False, 
         fade_out_trace=False, 
-        style=BASE_STYLE, 
+        style: DynamicalSystemStyle = BASE_STYLE, 
         **kwargs
     ):
-        self.__dict__.update(style.style) # Bundle style parameters into a 'style' attribute
+        self.__dict__.update(style.as_dict()) # Bundle style parameters into a 'style' attribute
         self.__dict__.update(kwargs)
         self.show_point = show_point
         self.scene = scene
@@ -185,7 +225,6 @@ class AbstractDynamicalSystem(VGroup):
             self.color_mappings = list(zip(colors, value_range))
             self.color_mappings.reverse()
 
-
     def _get_color_coding_limit_from_trace_simulation(self):
         """Generates a color coding limit by iteratively updating the system's
         coordinates and using the maximum of all calculated coordinates.."""
@@ -200,7 +239,6 @@ class AbstractDynamicalSystem(VGroup):
         # Equilibrium points would result in a color coding limit of 0,
         # which we can't have currently
         return color_coding_limit if color_coding_limit > 0 else 0.01
-
 
     def _get_color_coding_limit_from_plane_points(self):
         """Generates a color coding limit by applying the system functions once
@@ -221,7 +259,6 @@ class AbstractDynamicalSystem(VGroup):
                 ) for x in range(*rg_vals) for y in range(*rg_vals)
             ) * DS_COLOR_CODING_SCALE_FACTOR
 
-
     def add_to_scene(self):
         # self.scene.add(self.point_and_trace)
         self.scene.add(self.point_and_trace.point, self.point_and_trace.trace)
@@ -233,7 +270,6 @@ class AbstractDynamicalSystem(VGroup):
 
     def remove_from_scene(self):
         self.scene.remove(self.point_and_trace.point, self.point_and_trace.trace)
-
 
     def get_base_trace(self, color_code_velocity=False):
         parameters = dict(
@@ -287,8 +323,7 @@ class AbstractDynamicalSystem(VGroup):
         # trace.assemble_family()
         # trace.add(new_line)
 
-    def add_line_objects_to_trace_and_fade_out(self, trace, coords, last_coords):
-        # Assuming trace is a VGroup object
+    def add_line_objects_to_trace_and_fade_out(self, trace: VGroup, coords, last_coords):
         new_position = self.get_new_line_position(coords, last_coords)
         if self.unused_traces_repository:
             color = np.array([color_to_rgb(self.get_trace_color())])
@@ -300,25 +335,6 @@ class AbstractDynamicalSystem(VGroup):
             new_line.data['stroke_rgba'][:, :3] = color # Set color to stroke
             new_line.data['stroke_rgba'][:, 3] = 1 # Set opacity to stroke
             new_line.data['stroke_width'] = np.array([[float(self.width)]])
-
-
-            # new_line = self.unused_traces_repository.pop(0).set_points_by_ends(
-            #     new_position[0], 
-            #     new_position[1]
-            # ).set_fill(
-            #     opacity=1,
-            #     color=self.get_trace_color(),
-            # ).set_stroke(
-            #     opacity=1,
-            #     width=self.width,
-            #     color=self.get_trace_color()
-            # )
-
-            #set_opacity(1)#.set_stroke(width=self.width)#.set_color(self.get_trace_color())
-            # new_line.stroke_width = self.width
-            # new_line.color = self.get_trace_color()
-            # new_line.opacity = 1
-
         else:
             new_line = Line(
                 new_position[0],
@@ -327,19 +343,8 @@ class AbstractDynamicalSystem(VGroup):
                 stroke_width=self.width,
                 stroke_opacity=self.stroke_opacity
             )
-            # self.scene.add(new_line)
-            # print('      > added new line')
-
-
-        # current_time = time.process_time()
-        current_time = time.process_time()
 
         trace.add(new_line)
-
-        # trace.submobjects.append(new_line)
-        # trace.family.insert(0, new_line)
-        # trace.refresh_has_updater_status()
-        # trace.refresh_bounding_box()
 
         # time_to_add_trace = time.process_time() - current_time
         # print('\n')
@@ -538,7 +543,7 @@ class AbstractDynamicalSystem(VGroup):
 
     def set_style(self, style):
         if isinstance(style, DynamicalSystemStyle):
-            self.__dict__.update(style.style)
+            self.__dict__.update(style.as_dict())
         else: # Assume it's a dictionary
             self.__dict__.update(style)
 

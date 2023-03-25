@@ -403,7 +403,7 @@ class DynamicalSystemFamily:
         fade_out_trace=False,
         lower_quality=False,
         style=BASE_STYLE,
-        color=BASE_STYLE.style['color'], # can either be a single color or a list of colors to fade
+        color=BASE_STYLE.color, # can either be a single color or a list of colors to fade
         **kwargs
     ):
         self.scene = scene
