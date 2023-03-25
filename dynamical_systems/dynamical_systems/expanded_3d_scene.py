@@ -141,7 +141,7 @@ class ExpandedThreeDScene(ThreeDScene):
         self,
         color_index: str='blue',
         max_velocity=EXP_3D_SCENE_DEFAULT_MAX_VELOCITY,
-        slow_to_med_weight=0
+        slow_to_med_weight=1
     ):
         return [
             (SOME_VELOCITY_COLORS[color_index][0], slow_to_med_weight),
