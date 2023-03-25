@@ -34,7 +34,7 @@ class HalvorsenAttractorScene(ExpandedThreeDScene):
         self.wait(5)
 
 
-class MultipleLorentzAttractorScene(ExpandedThreeDScene):
+class LorentzAttractorScene(ExpandedThreeDScene):
     scale_factor = 0.125
     speed_rate = 0.325
     width = 2.5
