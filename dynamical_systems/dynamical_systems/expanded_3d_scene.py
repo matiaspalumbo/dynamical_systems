@@ -5,7 +5,6 @@ from enum import auto
 from strenum import StrEnum
 import numpy as np
 import math
-from colour import Color
 
 
 class RangeType(StrEnum):

@@ -5,7 +5,6 @@ import copy
 from manimlib import *
 from dynamical_systems.constants import *
 from dynamical_systems.abstract_dynamical_system import *
-from enum import IntEnum
 from typing import List
 from colour import Color
 
