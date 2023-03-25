@@ -4,6 +4,106 @@ import numpy as np
 import math
 
 
+class TestScene(ThreeDScene):
+    WAIT_TIME = 2.5
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        sigma = 10
+        beta = 8/3  
+        rho = 28
+        scale_factor = 0.125
+        dx = lambda x,y,z: sigma * (y - x)
+        dy = lambda x,y,z: rho * x - y - x * z
+        dz = lambda x,y,z: x * y - beta * z
+        color = 'teal1'
+        self.initial_position = (0.0, -1.0, 1.5)
+        self.params = dict(
+            scene=self,
+            dx=lambda x, y, z: scale_factor * dx(x/scale_factor, y/scale_factor, z/scale_factor),
+            dy=lambda x, y, z: scale_factor * dy(x/scale_factor, y/scale_factor, z/scale_factor),
+            dz=lambda x, y, z: scale_factor * dz(x/scale_factor, y/scale_factor, z/scale_factor),
+            point_radius=0.015,
+            point_color=GREY_B,
+            width=2.5,
+            speed_rate=2,
+            velocity_colors=[
+                (SOME_VELOCITY_COLORS[color][0], 1),
+                (SOME_VELOCITY_COLORS[color][1], 0),
+                (SOME_VELOCITY_COLORS[color][2], 20)
+            ], 
+            trace_fadeout_decrease_factor=0.05,
+            amount_to_not_fade_out_trace_before=10,
+            precision_multiplier_if_trace_too_rough=3,
+        )
+
+    def construct(self):
+        self._test_color_coded_fading_dynamical_system()
+        self._test_non_color_coded_dynamical_system()
+        self._test_color_coded_dynamical_system_snapshot()
+        self._test_dynamical_system_snapshot()
+        
+    def _test_color_coded_fading_dynamical_system(self):
+        self.add_label('Color-coded fading system')
+
+        systems = DynamicalSystemFamily(
+            initial_positions=[self.initial_position],
+            color_code_velocity="manual",
+            fade_out_trace=True,
+            **self.params
+        )
+        systems.add_to_scene()
+        
+        self.wait()
+        self.clear()
+
+    def _test_non_color_coded_dynamical_system(self):
+        self.add_label('Regular, non-color-coded system')
+        
+        systems = DynamicalSystemFamily(
+            initial_positions=[self.initial_position],
+            **self.params
+        )
+        systems.add_to_scene()
+        
+        self.wait()
+        self.clear()
+
+    def _test_color_coded_dynamical_system_snapshot(self):
+        self.add_label('Color-coded dynamical system snapshot')
+
+        systems = DynamicalSystemFamily(
+            initial_positions=[self.initial_position],
+            color_code_velocity="manual",
+            show_snapshots=True,
+            **self.params
+        )
+        systems.add_to_scene()
+        
+        self.wait()
+        self.clear()
+
+    def _test_dynamical_system_snapshot(self):
+        self.add_label('Regular dynamical system snapshot')
+        
+        systems = DynamicalSystemFamily(
+            initial_positions=[self.initial_position],
+            show_snapshots=True,
+            **self.params
+        )
+        systems.add_to_scene()
+        
+        self.wait()
+        self.clear()
+
+    def add_label(self, label):
+        self.add(Text(label).scale(.7).to_corner(UL))
+
+    def wait(self):
+        super().wait(self.WAIT_TIME)
+
+
+
 class HalvorsenAttractorScene(ExpandedThreeDScene):
     scale_factor = 0.28
     speed_rate = 0.35
@@ -28,6 +128,7 @@ class HalvorsenAttractorScene(ExpandedThreeDScene):
             range_params=[[-1.25, 1.15, 0.4]]*3,
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
+            return_position=1
         )
         systems = self._get_dynamical_systems()
         systems.add_to_scene()
@@ -59,10 +160,11 @@ class LorentzAttractorScene(ExpandedThreeDScene):
             range_params=[[0, 2, 0.5], [-1, 1, 0.5], [0, 2, 0.5]],
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
+            return_position=1
         )
         systems = self._get_dynamical_systems()
         systems.add_to_scene()
-        self.wait(10)
+        self.wait(5)
 
 
 class ChenLeeAttractorScene(ExpandedThreeDScene):
