@@ -106,10 +106,27 @@ PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
 # TODO: implement using coords_to_point when showing phase planes
 # TODO: stop using python lists and np.arrays at the same time
 # TODO: Remove DynamicalSystemStyle class in favor of dicts
-# TODO: Eradicate PointAndTrace
 # TODO: update color coding comments to include manual color coding
 # TODO: See if high mesh point resolution affects render time severely
 
+
+class Trace(VGroup):
+    def __init__(self, initial_position, *vmobjects: VMobject, **kwargs):
+        self.initial_position = initial_position
+        super().__init__(*vmobjects, **kwargs)
+
+    def init_points(self):
+        self.set_points_as_corners([self.initial_position] * 2)
+
+    @classmethod
+    def for_dynamical_system(cls, initial_position, color, width, opacity):
+        return cls(
+            initial_position=initial_position,
+            stroke_color=color,
+            stroke_width=width,
+            stroke_opacity=opacity,
+        ).move_to(initial_position)
+        
 
 
 class AbstractDynamicalSystem(VGroup):
@@ -167,10 +184,9 @@ class AbstractDynamicalSystem(VGroup):
         else:
             point = SurfaceMesh(Sphere(), resolution=(10, 10), color=self.point_color).scale(self.point_radius).move_to(self.init_pos_vector)
 
-        trace = self.get_base_trace(color_code_velocity)
+        trace = self.get_base_trace()
         self.point = point
         self.trace = trace
-        # self.point_and_trace = PointAndTrace(point, trace)
         self.trace_update_function = self.get_trace_update_function()
         self.unused_traces_repository = []
 
@@ -262,22 +278,13 @@ class AbstractDynamicalSystem(VGroup):
     def remove_from_scene(self):
         self.scene.remove(self.point, self.trace)
 
-    def get_base_trace(self, color_code_velocity=False):
-        parameters = dict(
-            stroke_color=self.color,
-            stroke_width=self.width,
-            stroke_opacity=self.stroke_opacity
+    def get_base_trace(self):
+        return Trace.for_dynamical_system(
+            self.init_pos_vector,
+            self.color,
+            self.width,
+            self.stroke_opacity
         )
-
-        if color_code_velocity:
-            trace = VGroup(**parameters)
-        else:
-            trace = Circle(
-                radius=0,
-                **parameters
-            )
-
-        return trace.move_to(self.init_pos_vector)
 
     def get_trace_update_function(self): # add_line_objects_to_trace
         if self.fade_out_trace:
@@ -307,12 +314,6 @@ class AbstractDynamicalSystem(VGroup):
         trace.family.insert(0, new_line)
         trace.refresh_has_updater_status()
         trace.refresh_bounding_box()
-
-        # trace.family[1] = it.chain(trace.family[1], [new_line])
-        # trace.family = [trace] + trace.submobjects
-        # print(len(trace.family), trace.family[:3])
-        # trace.assemble_family()
-        # trace.add(new_line)
 
     def add_line_objects_to_trace_and_fade_out(self, trace: VGroup, coords, last_coords):
         new_position = self.get_new_line_position(coords, last_coords)
