@@ -4,6 +4,55 @@ import numpy as np
 import math
 
 
+class DoublePendulumTest(Scene):
+    def construct(self) -> None:
+        n_of_pendulums = 5
+        # colors = list(Color(GREEN).range_to(Color(BLUE), n_of_pendulums))
+        colors = list(
+            Color('#bdc7b7').range_to(Color('#69a297'), math.floor(n_of_pendulums/2))
+        ) + list(Color('#69a297').range_to(Color('#487481'), math.floor(n_of_pendulums/2)))
+        pendulums = []
+        for i in range(len(colors)):
+            pendulums.append(DoublePendulum(
+                scene=self,
+                initial_angle1=2*i/len(colors)*PI,
+                initial_angle2=2*i/len(colors)*PI - 1e-5,
+                # initial_angle1=PI/2,
+                # initial_angle2=PI/2 - i*1e-5,
+                color=colors[i],
+                point_radius=0.04,
+                center=ORIGIN,
+                scale_factor=1.75
+            ))
+            pendulums[i].add_to_scene()
+
+        pendulums.append(DoublePendulum(
+            scene=self,
+            initial_angle1=0,
+            initial_angle2=0,
+            # initial_angle1=PI/2,
+            # initial_angle2=PI/2 - i*1e-5,
+            color=colors[-1],
+            point_radius=0.04,
+            center=ORIGIN,
+            scale_factor=1.7
+        ))
+        pendulums[-1].add_to_scene()
+
+        pendulums.append(Pendulum(
+            scene=self,
+            initial_angle=PI/2,
+            color=RED,
+            point_radius=0.04,
+            center=ORIGIN,
+            scale_factor=1.7
+        ))
+        pendulums[-1].add_to_scene()
+
+        pendulums[0].add_center_point()
+        self.wait(5)
+
+
 class TestScene(ThreeDScene):
     WAIT_TIME = 2.5
 
@@ -155,7 +204,7 @@ class LorentzAttractorScene(ExpandedThreeDScene):
         self.dx = lambda x,y,z: sigma * (y - x)
         self.dy = lambda x,y,z: rho * x - y - x * z
         self.dz = lambda x,y,z: x * y - beta * z
-        self.set_up_camera(rate=0.00975,rotation_center=np.array([0, 0, 3.5]))
+        self.set_up_camera(rate=0.003, rotation_center=np.array([0, 0, 3.5]))
         self.set_initial_positions(
             range_params=[[0, 2, 0.5], [-1, 1, 0.5], [0, 2, 0.5]],
             range_type=RangeType.ASSYMETRIC,
@@ -164,7 +213,7 @@ class LorentzAttractorScene(ExpandedThreeDScene):
         )
         systems = self._get_dynamical_systems()
         systems.add_to_scene()
-        self.wait(5)
+        self.wait(10)
 
 
 class ChenLeeAttractorScene(ExpandedThreeDScene):
@@ -196,7 +245,7 @@ class ChenLeeAttractorScene(ExpandedThreeDScene):
         r1 = Rotation.from_rotvec((np.pi/2 - np.pi/8) * np.array([1, 0, 0]))
         r2 = Rotation.from_rotvec(np.pi/4 * np.array([0, 0, 1]))
         rot = r2 * r1
-        self.set_up_camera(rate=0.006, rotation=rot)
+        self.set_up_camera(rate=0.003, rotation=rot)
         initial_positions = set([
             (x, y, sgn * z) for x in np.arange(0, 1, 0.5)
             for y in np.arange(-1, 1, 0.5)
@@ -238,7 +287,7 @@ class AizawaAttractorScene(ExpandedThreeDScene):
         self.dx = lambda x,y,z: (z - b) * x - d * y
         self.dy = lambda x,y,z: d * x + (z - b) * y
         self.dz = lambda x,y,z: c + a * z - z**3 / 3 - (x**2 + y**2) * (1 + e * z) + f * z * x**3
-        self.set_up_camera(rate=0.006, rotation_center=np.array([0.00643597, -0.02607911,  1.5]))
+        self.set_up_camera(rate=0.003, rotation_center=np.array([0.00643597, -0.02607911,  1.5]))
         self.set_initial_positions(
             # range_params=[[-1, 1, 0.25], [-0.5, 0.5, 0.5], [-2, 1.1, .5]],
             range_params=[[-1, 1, 0.25], [-0.5, 0.5, 0.25], [0, 2.1, .5]],
@@ -271,7 +320,7 @@ class ThomasAttractor(ExpandedThreeDScene):
         self.dx = lambda x,y,z: -beta * x + math.sin(y*scale) / scale
         self.dy = lambda x,y,z: -beta * y + math.sin(z*scale) / scale
         self.dz = lambda x,y,z: -beta * z + math.sin(x*scale) / scale
-        self.set_up_camera(rate=0.006)  # 0.00975
+        self.set_up_camera(rate=0.003)  # 0.00975
         self.set_initial_positions(
             range_params=[[-1.5, 1.61, 0.6]] * 3,
             range_type=RangeType.ASSYMETRIC,
@@ -302,7 +351,7 @@ class SakaryaAttractor(ExpandedThreeDScene):
         self.dx = lambda x,y,z: -x + y + (y * z)
         self.dy = lambda x,y,z: -x - y + (a * x * z)
         self.dz = lambda x,y,z: z - (b * x * y)
-        self.set_up_camera(rate=0.006)
+        self.set_up_camera(rate=0.003)
         self.set_initial_positions(
             range_params=[[-1.5, 1.51,  0.6]] * 3,
             range_type=RangeType.ASSYMETRIC,
@@ -336,7 +385,7 @@ class ChenCelikovskyAttractor(ExpandedThreeDScene):
         self.dy = lambda x,y,z: - x * z + delta * y
         self.dz = lambda x,y,z: x * y - beta * z
         system_avg_center = np.array([0.01420126, 0.01389016, 2.37932611])
-        self.set_up_camera(rate=0.006, rotation_center=system_avg_center)
+        self.set_up_camera(rate=0.003, rotation_center=system_avg_center)
         self.set_initial_positions(
             range_params=[[system_avg_center[i]-1, system_avg_center[i]+1, 0.5] for i in range(3)],
             range_type=RangeType.ASSYMETRIC,
@@ -351,7 +400,7 @@ class ChenCelikovskyAttractor(ExpandedThreeDScene):
             fade_out_trace=True,
         )
         systems.add_to_scene()
-        self.wait(30)
+        self.wait(5)
 
 
 class ThreeScrollAttractor(ExpandedThreeDScene):
