@@ -86,7 +86,7 @@ BASE_STYLE = DynamicalSystemStyle(
     velocity_colors= [(GREEN, 0), (YELLOW, 5), (RED, 10)], # Each number represents at least how big the derivative must be to color the curve that way
     trace_fadeout_decrease_factor = 0.05,
     amount_to_not_fade_out_trace_before = 5,
-    line_trace_overlap_buff=EXP_3D_SCENE_DEFAULT_TRACE_OVERLAP_BUFF,
+    line_trace_overlap_buff=EXP_SCENE_DEFAULT_TRACE_OVERLAP_BUFF,
     max_number_of_trace_lines=500,
     # [int] How many times to split dt in a single frame to add more steps to the approximation.
     # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
