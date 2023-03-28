@@ -70,21 +70,21 @@ SOME_VELOCITY_COLORS = {
 """ExpandedThreeDScene-related constants"""
 
 # Buff to prevent superposition between traces (which darkens colors and looks ugly)
-EXP_3D_SCENE_DEFAULT_TRACE_OVERLAP_BUFF = 0.0225
+EXP_SCENE_DEFAULT_TRACE_OVERLAP_BUFF = 0.0225
 
 # Default rate of camera rotation
-EXP_3D_SCENE_DEFAULT_CAMERA_ROTATION_RATE = 0.00375 # 0.003
+EXP_SCENE_DEFAULT_CAMERA_ROTATION_RATE = 0.00375 # 0.003
 
 # Default initial rotation of the camera
-EXP_3D_SCENE_DEFAULT_CAMERA_ROTATION = Rotation.from_rotvec(
+EXP_SCENE_DEFAULT_CAMERA_ROTATION = Rotation.from_rotvec(
     np.pi/4 * np.array([0, 0, 1])
 ) * Rotation.from_rotvec(np.pi/4 * np.array([1, 0, 0]))
 
 # Default step when calculating a system's initial positions
-EXP_3D_SCENE_DEFAULT_STEP = 0.5
+EXP_SCENE_DEFAULT_STEP = 0.5
 
 # Default range limit (both negative and positive) when calculating a system's initial positions
-EXP_3D_SCENE_DEFAULT_RANGE_LIMIT = 1
+EXP_SCENE_DEFAULT_RANGE_LIMIT = 1
 
 # Default maximum velocity when color-coding a system
-EXP_3D_SCENE_DEFAULT_MAX_VELOCITY = 10
+EXP_SCENE_DEFAULT_MAX_VELOCITY = 10
