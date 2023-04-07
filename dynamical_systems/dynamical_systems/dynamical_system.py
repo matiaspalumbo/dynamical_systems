@@ -85,7 +85,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
             self.is_updated_coord_too_far = np.linalg.norm(
                 self.get_np_array_from_list(maybe_updated_coords) - self.get_np_array_from_list(self.last_coords),
                 2
-            ) > 0.15
+            ) > self.trace_precision_increase_threshold
 
             if self.is_updated_coord_too_far:
                 for i in range(self.precision_multiplier_if_trace_too_rough - 1):
@@ -211,7 +211,7 @@ class DynamicalSystem(AbstractDynamicalSystem):
         self.is_updated_coord_too_far = np.linalg.norm(
             self.get_np_array_from_list(maybe_updated_coords) - self.get_np_array_from_list(self.last_coords),
             2
-        ) > 0.15
+        ) > self.trace_precision_increase_threshold
 
         if self.is_updated_coord_too_far:
             for i in range(self.precision_multiplier_if_trace_too_rough - 1):
