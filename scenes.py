@@ -152,7 +152,6 @@ class TestScene(ThreeDScene):
         super().wait(self.WAIT_TIME)
 
 
-
 class HalvorsenAttractorScene(ExpandedThreeDScene):
     scale_factor = 0.28
     speed_rate = 0.35
@@ -160,7 +159,7 @@ class HalvorsenAttractorScene(ExpandedThreeDScene):
     point_radius = 0.015
     stroke_opacity = 1
     point_color = GREY_B
-    color = 'magenta'
+    color = 'magenta2'
     max_velocity = 18
     trace_fadeout_decrease_factor = 0.085
     amount_to_not_fade_out_trace_before = 6.5
@@ -177,17 +176,21 @@ class HalvorsenAttractorScene(ExpandedThreeDScene):
             range_params=[[-1.25, 1.15, 0.4]]*3,
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
-            return_position=1
+            return_position=0
         )
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
         systems.add_to_scene()
-        self.wait(5)
+        self.wait(180)
 
 
 class LorentzAttractorScene(ExpandedThreeDScene):
     scale_factor = 0.125
     speed_rate = 0.325
-    width = 2.5
+    width = 2.25  # 2.5
     point_radius = 0.015
     stroke_opacity = 1
     point_color = GREY_B
@@ -196,6 +199,7 @@ class LorentzAttractorScene(ExpandedThreeDScene):
     trace_fadeout_decrease_factor = 0.1
     amount_to_not_fade_out_trace_before = 7.5
     precision_multiplier_if_trace_too_rough = 3
+    max_number_of_trace_lines = 250
 
     def construct(self) -> None:
         sigma = 10
@@ -206,14 +210,18 @@ class LorentzAttractorScene(ExpandedThreeDScene):
         self.dz = lambda x,y,z: x * y - beta * z
         self.set_up_camera(rate=0.003, rotation_center=np.array([0, 0, 3.5]))
         self.set_initial_positions(
-            range_params=[[0, 2, 0.5], [-1, 1, 0.5], [0, 2, 0.5]],
+            range_params=[[0, 2.1, 0.5], [-1, 1, 0.5], [0, 2, 0.5]],
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
-            return_position=1
+            return_position=0,
         )
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
         systems.add_to_scene()
-        self.wait(10)
+        self.wait(180)
 
 
 class ChenLeeAttractorScene(ExpandedThreeDScene):
@@ -245,7 +253,7 @@ class ChenLeeAttractorScene(ExpandedThreeDScene):
         r1 = Rotation.from_rotvec((np.pi/2 - np.pi/8) * np.array([1, 0, 0]))
         r2 = Rotation.from_rotvec(np.pi/4 * np.array([0, 0, 1]))
         rot = r2 * r1
-        self.set_up_camera(rate=0.003, rotation=rot)
+        self.set_up_camera(rate=0.003, rotation=rot, rotate_on_axis=Coords.Z)
         initial_positions = set([
             (x, y, sgn * z) for x in np.arange(0, 1, 0.5)
             for y in np.arange(-1, 1, 0.5)
@@ -253,13 +261,18 @@ class ChenLeeAttractorScene(ExpandedThreeDScene):
             for sgn in [-1, 1]
         ])
         self.initial_positions = self.remove_z_axis(initial_positions)
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
         systems.add_to_scene()
-        self.wait(15)
+        self.wait(180)
 
 
 class AizawaAttractorScene(ExpandedThreeDScene):
-    scale_factor = 1/0.55
+    snapshot_time_domain = [0, 50]
+    scale_factor = 2
     speed_rate = 1
     width = 2.5
     stroke_opacity = 1
@@ -289,15 +302,18 @@ class AizawaAttractorScene(ExpandedThreeDScene):
         self.dz = lambda x,y,z: c + a * z - z**3 / 3 - (x**2 + y**2) * (1 + e * z) + f * z * x**3
         self.set_up_camera(rate=0.003, rotation_center=np.array([0.00643597, -0.02607911,  1.5]))
         self.set_initial_positions(
-            # range_params=[[-1, 1, 0.25], [-0.5, 0.5, 0.5], [-2, 1.1, .5]],
             range_params=[[-1, 1, 0.25], [-0.5, 0.5, 0.25], [0, 2.1, .5]],
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
         )
         self.initial_positions = [self.scale_factor * np.array(pos) for pos in self.initial_positions]
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
         systems.add_to_scene()
-        self.wait(10)
+        self.wait(180)
 
 
 class ThomasAttractor(ExpandedThreeDScene):
@@ -326,9 +342,13 @@ class ThomasAttractor(ExpandedThreeDScene):
             range_type=RangeType.ASSYMETRIC,
         )
         self.initial_positions = [1.4 * np.array(pos) for pos in self.initial_positions]
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
         systems.add_to_scene()
-        self.wait(10)
+        self.wait(180)
 
 
 class SakaryaAttractor(ExpandedThreeDScene):
@@ -353,25 +373,28 @@ class SakaryaAttractor(ExpandedThreeDScene):
         self.dz = lambda x,y,z: z - (b * x * y)
         self.set_up_camera(rate=0.003)
         self.set_initial_positions(
-            range_params=[[-1.5, 1.51,  0.6]] * 3,
-            range_type=RangeType.ASSYMETRIC,
+            range_params=[[1.5,  0.6]] * 3,
+            range_type=RangeType.SYMMETRIC,
         )
-        systems = self._get_dynamical_systems()
+        systems = self._get_dynamical_systems(
+            is_for_n_positions=0,
+            fade_out_trace=True
+        )
         systems.add_to_scene()
-        self.wait(5)
+        self.wait(15)
 
 
 class ChenCelikovskyAttractor(ExpandedThreeDScene):
-    # snapshot_time_domain = [0, 50]
+    snapshot_time_domain = [0, 100]
     scale_factor = 0.125
     speed_rate = 0.25
-    width = 2.3
+    width = 2
     stroke_opacity = 1
     point_radius = 0.015
     point_color = GREY_B
     # color = 'blue2'
     color = 'green4_similar_to_teal1'
-    max_velocity = 35
+    max_velocity = 38
     trace_fadeout_decrease_factor = 0.1
     amount_to_not_fade_out_trace_before = 7
     precision_multiplier_if_trace_too_rough = 3
@@ -387,20 +410,17 @@ class ChenCelikovskyAttractor(ExpandedThreeDScene):
         system_avg_center = np.array([0.01420126, 0.01389016, 2.37932611])
         self.set_up_camera(rate=0.003, rotation_center=system_avg_center)
         self.set_initial_positions(
-            range_params=[[system_avg_center[i]-1, system_avg_center[i]+1, 0.5] for i in range(3)],
+            range_params=[[-1, 1, 0.5], [-1, 1, 0.5], [3, 5, 0.5]],
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True
         )
-        # Add this?
-        # self.initial_positions = [system_avg_center + 2 * np.array(pos) for pos in self.initial_positions]
         systems = self._get_dynamical_systems(
             is_snapshot=False,
             is_for_n_positions=0,
-            color_coded=True,
             fade_out_trace=True,
         )
         systems.add_to_scene()
-        self.wait(5)
+        self.wait(180)
 
 
 class ThreeScrollAttractor(ExpandedThreeDScene):
@@ -436,36 +456,29 @@ class ThreeScrollAttractor(ExpandedThreeDScene):
             remove_z_axis=True
         )
         self.initial_positions = [
-            [1.148429, 0.709311, 0.3254],
-            # [-0.5001082996789773, 0.6795187802409461, 1.320978560154969],
-            # [-0.8991415903743102, -2.622426491534678, -1.1600627177316363],
-            # [-1, 0, 1], [0, 1, 1], [0, 1, .5],
+            np.array([5, 5, 1]),
+            np.array([0.1, 0.1, 4]),
+            np.array([-5, -5, 1]),
             ]
-        # self.initial_positions = [(1, 1, 1), (-1, -1, -1), (1, -1, -1), (0, -1, 1)]
-        # self.initial_positions = [3*np.array(pos) for pos in self.initial_positions]
-        # self.initial_positions = [[2, 2, .5], [3, 3, 0], [.5, .5, .5], [-1, -2, .5], [-1, 2, 1]]
-        # self.initial_positions = [system_avg_center + 3 * np.array(pos) for pos in self.initial_positions]
         systems = self._get_dynamical_systems(
             is_snapshot=False,
             is_for_n_positions=0,
-            color_coded=True,
             fade_out_trace=True,
         )
         systems.add_to_scene()
-        # self.wait(3)
-        self.wait(30)
+        self.wait(180)
 
 
 class HadleyAttractor(ExpandedThreeDScene):
     snapshot_time_domain = [0, 50]
-    scale_factor = 1.7
+    scale_factor = 1.6
     speed_rate = 1
     width = 2
     stroke_opacity = 1
     point_radius = 0.015
     point_color = GREY_B
-    color = 'teal1'
-    max_velocity = 19
+    color = 'sea_blue'
+    max_velocity = 18
     trace_fadeout_decrease_factor = 0.05
     amount_to_not_fade_out_trace_before = 5
     precision_multiplier_if_trace_too_rough = 3 # 15
@@ -482,16 +495,230 @@ class HadleyAttractor(ExpandedThreeDScene):
         system_avg_center = np.array([[1.26852126, 0.7837236, 0.41510452]])
         self.set_up_camera(rate=0.003, rotation_center=system_avg_center)
         self.set_initial_positions(
+            range_params=[[1.01, 0.5], [1, 0.5], [1.01, 0.5]],
+            range_type=RangeType.SYMMETRIC,
+            remove_z_axis=True
+        )
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
+        systems.add_to_scene()
+        self.wait(180)
+
+
+class QiChenAttractor(ExpandedThreeDScene):
+    snapshot_time_domain = [0, 50]
+    scale_factor = 0.05
+    speed_rate = 0.15
+    width = 2
+    stroke_opacity = 1
+    point_radius = 0.015
+    point_color = GREY_B
+    color = 'sea_blue'
+    max_velocity = 90
+    trace_fadeout_decrease_factor = 0.05
+    amount_to_not_fade_out_trace_before = 10
+    precision_multiplier_if_trace_too_rough = 10 # 15
+    max_number_of_trace_lines = 100
+
+    def construct(self):
+        alpha = 38
+        beta = 8/3
+        ge = 80
+        self.dx = lambda x,y,z: alpha * (y - x) + y * z
+        self.dy = lambda x,y,z: ge * x + y - x * z
+        self.dz = lambda x,y,z: x * y - beta * z
+        system_avg_center = np.array([[0.14887396, 0.07973527, 4.04366204]])
+        self.set_up_camera(rate=0.003, rotation_center=system_avg_center)
+        self.set_initial_positions(
             range_params=[1, 0.5],
             range_type=RangeType.SIMPLE,
             remove_z_axis=True
         )
         systems = self._get_dynamical_systems(
-            is_snapshot=True,
-            is_for_n_positions=3,
-            color_coded=True,
-            fade_out_trace=False,
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
         )
         systems.add_to_scene()
-        self.wait(5)
+        self.wait(180)
 
+
+class RosslerAttractor(ExpandedThreeDScene):
+    snapshot_time_domain = [0, 100]
+    scale_factor = 0.35
+    speed_rate = 2
+    width = 2
+    stroke_opacity = 1
+    point_radius = 0.015
+    point_color = GREY_B
+    color = 'orange_red'
+    max_velocity = 7.25
+    trace_fadeout_decrease_factor = 0.05
+    amount_to_not_fade_out_trace_before = 25
+    precision_multiplier_if_trace_too_rough = 8 
+    max_number_of_trace_lines = 100
+
+    def construct(self):
+        alpha = 0.2
+        beta = 0.2
+        ge = 5.7
+        self.dx = lambda x,y,z: - y - z
+        self.dy = lambda x,y,z: x + alpha * y
+        self.dz = lambda x,y,z: beta + z * (x - ge)
+        rotation = Rotation.from_rotvec(
+            np.pi/8 * np.array([0, 0, 1])
+        ) * Rotation.from_rotvec(np.pi/2 * np.array([1, 0, 0]))
+        system_center = np.array([0.07261591, -0.35280944, 2.6])
+        self.set_up_camera(
+            rate=0.003,
+            rotation=rotation,
+            rotate_on_axis=Coords.Z,
+            rotation_center=system_center
+        )
+        self.set_initial_positions(
+            range_params=[[0, 4, 1]] * 3,
+            range_type=RangeType.ASSYMETRIC,
+            remove_z_axis=True,
+        )
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
+        systems.add_to_scene()
+        self.wait(180)
+
+
+class FinanceAttractor(ExpandedThreeDScene):
+    snapshot_time_domain = [0, 100]
+    scale_factor = 1.5
+    speed_rate = 3
+    width = 2
+    stroke_opacity = 1
+    point_radius = 0.015
+    point_color = GREY_B
+    color = 'orange_red'
+    max_velocity = 4
+    trace_fadeout_decrease_factor = 0.05
+    amount_to_not_fade_out_trace_before = 25
+    precision_multiplier_if_trace_too_rough = 6
+    # max_number_of_trace_lines = 100
+
+    def construct(self):
+        alpha = 0.001
+        beta = 0.2
+        ge = 1.1
+        self.dx = lambda x,y,z: (1 / beta - alpha) * x + z + x * y
+        self.dy = lambda x,y,z: - beta * y - x **2
+        self.dz = lambda x,y,z: - x - ge * z
+        system_center = np.array([-1.11566000e-02, -6.36533981,  2.18073883e-03])
+        self.set_up_camera(
+            rate=0.004,
+            rotation=None,
+            rotate_on_axis=Coords.Y,
+            rotation_center=system_center
+        )
+        self.set_initial_positions(
+            range_params=[[-1, 1.01, 1]] * 3,
+            range_type=RangeType.ASSYMETRIC,
+            remove_z_axis=True,
+        )
+        self.initial_positions = [system_center]
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
+        systems.add_to_scene()
+        self.wait(180)
+
+
+class YuWangAttractor(ExpandedThreeDScene):
+    snapshot_time_domain = [0, 50]
+    scale_factor = 0.225
+    speed_rate = 0.25
+    width = 2
+    stroke_opacity = 1
+    point_radius = 0.015
+    point_color = GREY_B
+    color = 'terracota'
+    max_velocity = 40
+    trace_fadeout_decrease_factor = 0.05
+    amount_to_not_fade_out_trace_before = 10
+    precision_multiplier_if_trace_too_rough = 50
+    max_number_of_trace_lines = 1000
+
+    def construct(self):
+        alpha = 10
+        beta = 40
+        ge = 2
+        delta = 2.5
+        self.dx = lambda x,y,z: alpha * (y - x)
+        self.dy = lambda x,y,z: beta * x - ge * x * z
+        self.dz = lambda x,y,z: math.exp(x * y) - delta * z
+        system_center = np.array([[0.01055654, 0.01495632, 5.60911935]])
+        self.set_up_camera(
+            rate=0.003,
+            rotate_on_axis=Coords.Z,
+            rotation_center=system_center
+        )
+        self.set_initial_positions(
+            range_params=[[0.01, 0.5, 0.3], [0.01, 0.5, 0.3], [1, 3, 0.5]],
+            range_type=RangeType.ASSYMETRIC,
+            remove_z_axis=True,
+        )
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
+        systems.add_to_scene()
+        systems.systems[0].trace_precision_increase_threshold = 0.05
+        self.wait(180)
+
+
+class LorentzMod2Attractor(ExpandedThreeDScene):
+    snapshot_time_domain = [0, 50]
+    scale_factor = 0.25
+    speed_rate = 0.10
+    width = 2
+    stroke_opacity = 1
+    point_radius = 0.015
+    point_color = GREY_B
+    color = 'terracota'
+    max_velocity = 250
+    trace_fadeout_decrease_factor = 0.05
+    amount_to_not_fade_out_trace_before = 100
+    precision_multiplier_if_trace_too_rough = 5
+    max_number_of_trace_lines = 1000
+
+    def construct(self):
+        alpha = 10
+        beta = 40
+        zeta = 2
+        delta = 2.5
+        self.dx = lambda x,y,z: - alpha * x + y**2 - z **2 + alpha * zeta
+        self.dy = lambda x,y,z: x * (y - beta * z) + delta
+        self.dz = lambda x,y,z: - z + x * (beta * y + z)
+        system_center = np.array([[0.30101537, 0.39272164, 0.54582488]])
+        self.set_up_camera(
+            rate=0.005,
+            rotate_on_axis=Coords.Z,
+            rotation_center=system_center
+        )
+        self.set_initial_positions(
+            range_params=[[0.01, 0.5, 0.3], [0.01, 0.5, 0.3], [2.5, 3, 0.5]],
+            range_type=RangeType.ASSYMETRIC,
+            remove_z_axis=True,
+        )
+        self.initial_positions = list(self.initial_positions) + [[j, 0.5, -i] for i in np.arange(2.5, 3, 0.5) for j in [0.01, 0.2]]
+        systems = self._get_dynamical_systems(
+            is_snapshot=False,
+            is_for_n_positions=0,
+            fade_out_trace=True,
+        )
+        systems.add_to_scene()
+        self.wait(180)
