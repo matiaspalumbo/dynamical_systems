@@ -46,15 +46,15 @@ DS_COLOR_CODING_SCALE_FACTOR = 0.93
 """Style-related constants"""
 
 SOME_VELOCITY_COLORS = {
-    'blue': ['#8ecae6', '#219ebc', '#045a85'], # blues
-    'green1': ['#84a98c', '#52796f', '#354f52'], # greens - alternative last: '#354f52' / alt first: '#cad2c5'
-    'salmon_dont_use': ['#ffcdb2', '#ffb4a2', '#e5989b'], # oranges/salmon
-    'teal1': ['#bdc7b7', '#69a297', '#487481'], # teals?
-    'magenta': ['#dca2ad', '#ce7d8d', '#b9465c'], # 
-    'purple1': ['#a189a9', '#7c6783', '#56445d'], # purple ish
-    'purple2': ['#b196cc', '#916bb7', '#69458d'], # purple ish v2 - chen lee here
-    'green2': ['#30bb7d', '#269563', '#12462f'],#, # greens
-    'teal2': ['#a3c9a8', '#69a297', '#50808e'], # teals?
+    'blue': ['#8ecae6', '#219ebc', '#045a85'],  # blues
+    'green1': ['#84a98c', '#52796f', '#354f52'],  # greens - alternative last: '#354f52' / alt first: '#cad2c5'
+    'salmon_dont_use': ['#ffcdb2', '#ffb4a2', '#e5989b'],  # oranges/salmon
+    'teal1': ['#bdc7b7', '#69a297', '#487481'],  # teals?
+    'magenta2': ['#dca3ae', '#d28897', '#a35c68'], 
+    'purple1': ['#a189a9', '#7c6783', '#56445d'],  # purple ish
+    'purple2': ['#b196cc', '#916bb7', '#69458d'],  # purple ish v2 - chen lee here
+    'green2': ['#30bb7d', '#269563', '#12462f'],  # greens
+    'teal2': ['#a3c9a8', '#69a297', '#50808e'],  # teals?
     'yellow_red_pastel': ['#dbf76a', '#f7cd6a', '#f7866a'],
     # 'yellow_red_pastel': ['#9fcf89', '#f7cd6a', '#f7866a']
     'blue2': ['#64b6dd', '#219ebc', '#023047'],
@@ -63,7 +63,9 @@ SOME_VELOCITY_COLORS = {
     'green3_very_dark': ['#52796f', '#354f52', '#2f3e46'],
     'green3_very_dark2': ['#72a094', '#4a6f72', '#374851'],
     'green4_similar_to_teal1': ['#84a98c', '#52796f', '#354f52'],
-    'dark_purple': ['#808c79', '#958c9c', '#423c45',]# '#4d4651'],
+    'dark_purple': ['#808c79', '#958c9c', '#423c45',],  # '#4d4651'],
+    'orange_red': ['#d1a99d', '#ae7251', '#9c443c'],
+    'sea_blue': ['#9fb5d0' , '#5b86a9', '#334b68']
 }
 
 
