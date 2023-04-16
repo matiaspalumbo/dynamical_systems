@@ -1,0 +1,6 @@
+directories:
+  output: "/Users/matiaspalumbo/Documents/Manim Stuff/rendered videos"
+style:
+  font: "Merriweather"
+  background_color: "#000000"
+fps: 60

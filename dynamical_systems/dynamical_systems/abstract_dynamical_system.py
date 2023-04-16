@@ -36,6 +36,7 @@ class DynamicalSystemStyle:
         'line_trace_overlap_buff',
         'max_number_of_trace_lines',
         'precision_multiplier_if_trace_too_rough',
+        'trace_precision_increase_threshold'
     ]
 
     def __init__(self, **kwargs):
@@ -91,6 +92,7 @@ BASE_STYLE = DynamicalSystemStyle(
     # [int] How many times to split dt in a single frame to add more steps to the approximation.
     # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
     precision_multiplier_if_trace_too_rough=1,
+    trace_precision_increase_threshold=0.15,
 )
 
 PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(

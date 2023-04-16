@@ -210,17 +210,17 @@ class ExpandedThreeDScene(ThreeDScene):
     
     # Max number of trace lines to have not faded out at a given frame
     max_number_of_trace_lines = 500
-
-    # TODO: Add function to get test snapshot from class AND TO ADD FUNCTIONS TO CODE
         
     def set_up_camera(
         self,
         rate=EXP_SCENE_DEFAULT_CAMERA_ROTATION_RATE,
         rotation=EXP_SCENE_DEFAULT_CAMERA_ROTATION,
-        rotation_center=ORIGIN
+        rotation_center=ORIGIN,
+        rotate_on_axis=None,
     ):
         # Set up rotation
-        self.camera.frame.set_orientation(rotation)
+        if rotation is not None:
+            self.camera.frame.set_orientation(rotation)
         # Set up rotation center - in most cases, average center of the system
         self.camera.frame.move_to(rotation_center)
 
@@ -228,24 +228,42 @@ class ExpandedThreeDScene(ThreeDScene):
             return 0.1 + math.cos(dt + offset)
 
         # Continuously rotate camera
+        if rotate_on_axis is not None:
+            axes = [RIGHT, UP, OUT]
+            rotation_func = lambda t: get_dt(t) * axes[rotate_on_axis]
+        else:
+            rotation_func = lambda t: get_dt(t) * OUT + get_dt(t, PI/2) * UP + get_dt(t, PI) * RIGHT
+
         self.camera.frame.add_updater(
             lambda camFrame, dt: camFrame.rotate(
                 angle=rate,
-                axis=get_dt(dt) * OUT + get_dt(dt, PI/2) * UP + get_dt(dt, PI) * RIGHT,
+                axis=(rotation_func)(dt),
                 about_point=rotation_center,
             )
         )
     
-    def set_up_axes(self):
-        axes_config = dict(tip_length=0.2, tip_width=0.2, fill_opacity=0.3)
+    def set_up_axes(self, color_axes=False):
         axes_length = 50
-        axes = ThreeDAxes(
+        tip_width = 0.2 
+        tip_length = 0.2
+        fill_opacity = 0.3
+        params = dict(
             x_range=[-axes_length, axes_length],
             y_range=[-axes_length, axes_length],
-            z_range=[-axes_length, axes_length],
-            axis_config=axes_config,
-            z_axis_config=axes_config
+            z_range=[-axes_length, axes_length]
         )
+        if color_axes:
+            params.update(dict(
+                x_axis_config=dict(tip_length=tip_width, tip_width=tip_length, fill_opacity=fill_opacity, color=RED),
+                y_axis_config=dict(tip_length=tip_width, tip_width=tip_length, fill_opacity=fill_opacity, color=BLUE),
+                z_axis_config=dict(tip_length=tip_width, tip_width=tip_length, fill_opacity=fill_opacity, color=GREEN),
+            ))
+        else:
+            params.update(dict(
+                axis_config=dict(tip_length=tip_width, tip_width=tip_length, fill_opacity=fill_opacity),
+                z_axis_config=dict(tip_length=tip_width, tip_width=tip_length, fill_opacity=fill_opacity),
+            ))
+        axes = ThreeDAxes(**params)
         self.add(axes)
         return axes
 
@@ -255,7 +273,8 @@ class ExpandedThreeDScene(ThreeDScene):
             range_type=RangeType.SIMPLE,
             remove_z_axis=False,
             remove_origin=False, 
-            return_position=0
+            return_position=0,
+            scale_by=None
         ):
         """
         Returns a set of 3-uples according to the given range parameters.
@@ -293,6 +312,9 @@ class ExpandedThreeDScene(ThreeDScene):
             self.initial_positions = self.remove_z_axis(initial_positions)
         elif remove_origin:
             self.initial_positions = initial_positions - {(0,0,0)}
+
+        if scale_by is not None:
+            self.initial_positions = [list(scale_by * np.array(pos)) for pos in self.initial_positions]
         
         return initial_positions
     
@@ -362,6 +384,9 @@ class ExpandedThreeDScene(ThreeDScene):
             color_coded=True,
             fade_out_trace=True,
         ):
+        if fade_out_trace and is_snapshot:
+            raise Exception("Can't ask for a faded-out snapshot (yet?)")
+
         params = dict(
             **(self._get_base_system_params(is_snapshot, is_for_n_positions)),
         )
