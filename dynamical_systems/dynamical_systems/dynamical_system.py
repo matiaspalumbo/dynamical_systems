@@ -396,7 +396,7 @@ class DynamicalSystemFamily:
         colors = self.generate_color_gradient(color)
 
         # Generate systems
-        should_log_build_progress = show_snapshots and color_code_velocity and len(self.initial_positions) > 10
+        should_log_build_progress = (show_snapshots or color_code_velocity or fade_out_trace) and len(self.initial_positions) > 10
         if should_log_build_progress:
             print(f"Total of systems to build: {len(self.initial_positions)}")
         for i, init_pos in enumerate(self.initial_positions):

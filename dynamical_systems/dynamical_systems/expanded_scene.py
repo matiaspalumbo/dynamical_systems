@@ -210,8 +210,6 @@ class ExpandedThreeDScene(ThreeDScene):
     
     # Max number of trace lines to have not faded out at a given frame
     max_number_of_trace_lines = 500
-
-    # TODO: Add function to get test snapshot from class AND TO ADD FUNCTIONS TO CODE
         
     def set_up_camera(
         self,
