@@ -153,27 +153,37 @@ class TestScene(ThreeDScene):
 
 
 class HalvorsenAttractorScene(ExpandedThreeDScene):
+    # snapshot_time_domain=[0,200]
     scale_factor = 0.28
     speed_rate = 0.35
-    width = 2
+    width = 1.8
     point_radius = 0.015
     stroke_opacity = 1
     point_color = GREY_B
     color = 'magenta2'
     max_velocity = 18
     trace_fadeout_decrease_factor = 0.085
-    amount_to_not_fade_out_trace_before = 6.5
-    precision_multiplier_if_trace_too_rough = 3
+    amount_to_not_fade_out_trace_before = 4 # 6.5
+    precision_multiplier_if_trace_too_rough = 1  # 3
     max_number_of_trace_lines = 100
 
     def construct(self) -> None:
+        self.camera
         a = 1.89
         self.dx = lambda x,y,z: - a * x - 4 * y - 4 * z - (y)**2
         self.dy = lambda x,y,z: - a * y - 4 * z - 4 * x - (z)**2
         self.dz = lambda x,y,z: - a * z - 4 * x - 4 * y - (x)**2
-        self.set_up_camera(rate=0.003, rotation_center=np.array([-0.60324335, -0.82967388, -0.90370904]))
+        # self.set_up_camera(rate=0.003, rotation_center=np.array([-0.60324335, -0.82967388, -0.90370904]))
+        self.set_up_camera(rate=0.003)
+        self.set_up_camera(
+            rate=0,
+            rotation=Rotation.from_rotvec(np.array([0.06975916, 0.8150344,  1.23409955])),
+            rotation_center=np.array([-0.74296151, -0.7326116,  -0.73024724]),
+        )
+        # self.set_up_camera(rate=0, rotation=Rotation.from_rotvec(np.array([-0.81552564,  1.31243522,  1.62873928])))
         self.set_initial_positions(
-            range_params=[[-1.25, 1.15, 0.4]]*3,
+            # range_params=[[-1.25, 1.15, 0.4]]*3,
+            range_params=[[-0.1, 0.1, 0.035]]*3,
             range_type=RangeType.ASSYMETRIC,
             remove_z_axis=True,
             return_position=0
@@ -184,7 +194,10 @@ class HalvorsenAttractorScene(ExpandedThreeDScene):
             fade_out_trace=True,
         )
         systems.add_to_scene()
-        self.wait(180)
+
+        # self.wait(10)
+        self.wait(90)
+        # self.wait(180)
 
 
 class LorentzAttractorScene(ExpandedThreeDScene):
@@ -526,9 +539,9 @@ class QiChenAttractor(ExpandedThreeDScene):
     def construct(self):
         alpha = 38
         beta = 8/3
-        ge = 80
+        zeta = 80
         self.dx = lambda x,y,z: alpha * (y - x) + y * z
-        self.dy = lambda x,y,z: ge * x + y - x * z
+        self.dy = lambda x,y,z: zeta * x + y - x * z
         self.dz = lambda x,y,z: x * y - beta * z
         system_avg_center = np.array([[0.14887396, 0.07973527, 4.04366204]])
         self.set_up_camera(rate=0.003, rotation_center=system_avg_center)
@@ -564,10 +577,10 @@ class RosslerAttractor(ExpandedThreeDScene):
     def construct(self):
         alpha = 0.2
         beta = 0.2
-        ge = 5.7
+        zeta = 5.7
         self.dx = lambda x,y,z: - y - z
         self.dy = lambda x,y,z: x + alpha * y
-        self.dz = lambda x,y,z: beta + z * (x - ge)
+        self.dz = lambda x,y,z: beta + z * (x - zeta)
         rotation = Rotation.from_rotvec(
             np.pi/8 * np.array([0, 0, 1])
         ) * Rotation.from_rotvec(np.pi/2 * np.array([1, 0, 0]))
@@ -610,10 +623,10 @@ class FinanceAttractor(ExpandedThreeDScene):
     def construct(self):
         alpha = 0.001
         beta = 0.2
-        ge = 1.1
+        zeta = 1.1
         self.dx = lambda x,y,z: (1 / beta - alpha) * x + z + x * y
         self.dy = lambda x,y,z: - beta * y - x **2
-        self.dz = lambda x,y,z: - x - ge * z
+        self.dz = lambda x,y,z: - x - zeta * z
         system_center = np.array([-1.11566000e-02, -6.36533981,  2.18073883e-03])
         self.set_up_camera(
             rate=0.004,
@@ -654,10 +667,10 @@ class YuWangAttractor(ExpandedThreeDScene):
     def construct(self):
         alpha = 10
         beta = 40
-        ge = 2
+        zeta = 2
         delta = 2.5
         self.dx = lambda x,y,z: alpha * (y - x)
-        self.dy = lambda x,y,z: beta * x - ge * x * z
+        self.dy = lambda x,y,z: beta * x - zeta * x * z
         self.dz = lambda x,y,z: math.exp(x * y) - delta * z
         system_center = np.array([[0.01055654, 0.01495632, 5.60911935]])
         self.set_up_camera(
