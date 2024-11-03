@@ -1,5 +1,5 @@
 directories:
-  output: "/Users/matiaspalumbo/Documents/Manim Stuff/rendered videos"
+  output: "../manim_media"
 style:
   font: "Merriweather"
   background_color: "#000000"
