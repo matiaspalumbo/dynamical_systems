@@ -4,12 +4,12 @@ import copy
 
 from manimlib import *
 from dynamical_systems.constants import *
-from dynamical_systems.abstract_dynamical_system import *
+from dynamical_systems.base_dynamical_system import *
 from typing import List
 from colour import Color
 
 
-class DynamicalSystemSnapshot(AbstractDynamicalSystem):
+class DynamicalSystemSnapshot(BaseDynamicalSystem):
     """A frozen-in-time dynamical system."""
 
     # TODO: Not sure I like this idea a lot, but maybe implement UnilateralDynamicalSystem and then make DynamicalSystem
@@ -181,7 +181,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
 
 
 
-class DynamicalSystem(AbstractDynamicalSystem):
+class DynamicalSystem(BaseDynamicalSystem):
     """A dynamical system that updates its position on each frame."""
 
     def __init__(

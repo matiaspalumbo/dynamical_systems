@@ -1,7 +1,7 @@
 import sys
 # Don't know why but ManimGL doesn't add current working directory as part of the PATH.
 # Doing this so I can import dynamical_systems.
-sys.path.append('/Users/matiaspalumbo/Documents/Manim stuff/ManimGL')
+sys.path.append('/Users/matiaspalumbo/dynamical_systems/dynamical_systems')
 
 from manimlib import *
 from dynamical_systems import *
@@ -536,7 +536,7 @@ class EscenaAtractorDeLorentzSnapshot(ThreeDScene):
             dy=lorentz_y,
             dz=lorentz_z,
             init_pos=posicion_inicial,
-            time_domain=[0,200],
+            time_domain=[0,10],
             show_point=False,
             color_code_velocity="from_trace",
             speed_rate=.2,
@@ -544,7 +544,7 @@ class EscenaAtractorDeLorentzSnapshot(ThreeDScene):
             point_radius=0.035,
         )
         sistema.add_to_scene()
-        self.wait(30)
+        self.wait(2)
 
 
 class EscenaAtractorDeRosslerSnapshot(ThreeDScene):

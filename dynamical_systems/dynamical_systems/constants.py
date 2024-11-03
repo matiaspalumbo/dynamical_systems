@@ -1,6 +1,7 @@
+import numpy as np
+
 from manimlib import Rotation
 from manimlib.constants import *
-import numpy as np
 
 
 

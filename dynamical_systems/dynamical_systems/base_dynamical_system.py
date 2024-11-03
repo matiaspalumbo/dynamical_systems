@@ -3,6 +3,7 @@ import copy
 
 from manimlib import *
 from dynamical_systems.constants import *
+from dynamical_systems.styles import *
 
 from enum import IntEnum
 from colour import Color
@@ -13,94 +14,6 @@ class Coords(IntEnum):
     X = 0
     Y = 1
     Z = 2
-
-
-class DynamicalSystemStyle:
-    VALID_ATTRS = [
-        'speed_rate',
-        'color',
-        'width',
-        'stroke_opacity',
-        'point_radius',
-        'point_color',
-        'local_section_perp_vector_color',
-        'local_section_vector_color',
-        'local_section_vec_freq',
-        'flow_box_perp_vector_color',
-        'flow_box_trace_color',
-        'flow_box_trace_width',
-        'flow_box_solution_time_domain',
-        'velocity_colors',
-        'trace_fadeout_decrease_factor',
-        'amount_to_not_fade_out_trace_before',
-        'line_trace_overlap_buff',
-        'max_number_of_trace_lines',
-        'precision_multiplier_if_trace_too_rough',
-        'trace_precision_increase_threshold'
-    ]
-
-    def __init__(self, **kwargs):
-        self._init_traits()
-        for trait, value in kwargs.items():            
-            if trait not in self.VALID_ATTRS:
-                raise Exception(f'Unsupported style attribute: {trait}')
-            self.__dict__[trait] = value
-
-    def _init_traits(self):
-        for trait in self.VALID_ATTRS:
-            self.set_value(trait, None)
-
-    def as_dict(self):
-        return {trait: self.get_value(trait) for trait in self.VALID_ATTRS}
-    
-    def get_value(self, trait):
-        return self.__dict__[trait]
-
-    def set_value(self, trait, value):
-        self.__dict__[trait] = value
-
-    @classmethod
-    def from_existing_style(cls, dynamical_system_style, **kwargs):
-        new_style = dynamical_system_style.as_dict()
-        new_style.update(kwargs)
-        return cls(**new_style)
-
-    def __str__(self):
-        return str(self.as_dict())
-
-
-
-BASE_STYLE = DynamicalSystemStyle(
-    speed_rate = 1, # Larger speed rate results in less smoothness
-    color = '#3e99a0', # Main system trace color
-    width = 3.2, # Main system trace width
-    stroke_opacity = 1, # Main system stroke opacity
-    point_radius = 0.05,
-    point_color=WHITE,
-    local_section_perp_vector_color = GREEN,
-    local_section_vector_color = GREY,
-    local_section_vec_freq = 4,
-    flow_box_perp_vector_color = PURPLE_E,
-    flow_box_trace_color = PURPLE_A,
-    flow_box_trace_width = 3.2,
-    flow_box_solution_time_domain = [-0.5, 0.5],
-    velocity_colors= [(GREEN, 0), (YELLOW, 5), (RED, 10)], # Each number represents at least how big the derivative must be to color the curve that way
-    trace_fadeout_decrease_factor = 0.05,
-    amount_to_not_fade_out_trace_before = 5,
-    line_trace_overlap_buff=EXP_SCENE_DEFAULT_TRACE_OVERLAP_BUFF,
-    max_number_of_trace_lines=500,
-    # [int] How many times to split dt in a single frame to add more steps to the approximation.
-    # Increase to add detail and preserve speed rate, or if there is a large variation in speed in the system.
-    precision_multiplier_if_trace_too_rough=1,
-    trace_precision_increase_threshold=0.15,
-)
-
-PHASE_PLANE_STYLE = DynamicalSystemStyle.from_existing_style(
-    BASE_STYLE,
-    point_radius=0.035,
-    width=2.8,
-    stroke_opacity=0.65
-)
 
 
 # TODO: Make style parameters to be only accessed through the 'style' attribute of the system, not as regular attributes
@@ -128,10 +41,10 @@ class Trace(VGroup):
             stroke_width=width,
             stroke_opacity=opacity,
         ).move_to(initial_position)
-        
 
 
-class AbstractDynamicalSystem(VGroup):
+
+class BaseDynamicalSystem(VGroup):
     """Base class for dynamical systems."""
 
     def __init__(
@@ -179,7 +92,12 @@ class AbstractDynamicalSystem(VGroup):
             self.sum_of_all_trace_lines = 0
             self.sum_of_trace_lines_not_faded_out = 0
 
-        self._setup_color_mappings()
+        # Parameters to handle in system color manager:
+            # color_code_velocity
+
+
+        self._trace_color_manager = SystemColorManager()
+        self._trace_color_manager.setup_color_mappings(self)
 
         if self.dimension == 2:
             point = Dot(radius=self.point_radius).move_to(self.init_pos_vector)
@@ -195,80 +113,6 @@ class AbstractDynamicalSystem(VGroup):
         self.build_solution()
 
         super().__init__(self.trace, self.point)
-
-
-    def _setup_color_mappings(self):
-        if self.color_code_velocity:
-            assert len(self.velocity_colors) == 3, "Must take exactly three colors for coloring velocity"
-            
-            slow_to_med_color_weight = 1
-            # A few ways of automatically generating the color code limit, i.e. the value
-            # after which lines are painted in the color associated ot the highest velocity.
-            if self.color_code_velocity == 'from_trace':
-                color_coding_limit = self._get_color_coding_limit_from_trace_simulation() 
-            elif self.color_code_velocity == 'from_plane':
-                color_coding_limit = self._get_color_coding_limit_from_plane_points() 
-            elif self.color_code_velocity == 'manual':
-                color_coding_limit = self.velocity_colors[2][1]
-                # slow_to_med_color_weight should be the percentage of the color coding limit
-                # over which to calculate the slow_to_med gradient (higher percentage means
-                # higher thresholds for slow color)
-                slow_to_med_color_weight = self.velocity_colors[0][1]
-            else:
-                raise AssertionError("Unsupported color_code_velocity type")
-            
-            self.velocity_colors = [Color(c[0]) for c in self.velocity_colors]
-            color_slow_to_med = list(self.velocity_colors[0].range_to(self.velocity_colors[1], DS_COLOR_CODING_VARIETY))
-            color_med_to_fast = list(self.velocity_colors[1].range_to(self.velocity_colors[2], DS_COLOR_CODING_VARIETY))
-            colors = color_slow_to_med + color_med_to_fast[1:]
-
-            if slow_to_med_color_weight == 1:
-                step = color_coding_limit / len(colors)           
-                value_range = np.arange(0, color_coding_limit + step/2, step)
-            else:
-                weighted_half_color_coding_limit = slow_to_med_color_weight*color_coding_limit
-                slow_to_med_step = weighted_half_color_coding_limit / (len(color_slow_to_med) - 1)
-                med_to_fast_step = (color_coding_limit - weighted_half_color_coding_limit) / len(color_med_to_fast)
-                slow_to_med_values = list(np.arange(0, weighted_half_color_coding_limit + slow_to_med_step/2, slow_to_med_step))[1:]
-                med_to_fast_values = list(np.arange(weighted_half_color_coding_limit + med_to_fast_step, color_coding_limit + med_to_fast_step/2, med_to_fast_step))
-                value_range = slow_to_med_values + med_to_fast_values
-
-            self.color_mappings = list(zip(colors, value_range))
-            self.color_mappings.reverse()
-
-    def _get_color_coding_limit_from_trace_simulation(self):
-        """Generates a color coding limit by iteratively updating the system's
-        coordinates and using the maximum of all calculated coordinates.."""
-
-        initial_coords = copy.deepcopy(self.coords)
-        color_coding_limit = max(
-            np.linalg.norm(
-                self.update_coords(initial_coords, HD_TIME_DELTA), 2
-            ) for _ in range(DS_TRACE_COLOR_CODING_N_OF_ITERATIONS)
-        ) * DS_COLOR_CODING_SCALE_FACTOR
-
-        # Equilibrium points would result in a color coding limit of 0,
-        # which we can't have currently
-        return color_coding_limit if color_coding_limit > 0 else 0.01
-
-    def _get_color_coding_limit_from_plane_points(self):
-        """Generates a color coding limit by applying the system functions once
-        to a bunch of integer pairs of the plane and getting the maximum among
-        those values."""
-
-        rg_vals = [-DS_PLANE_COLOR_CODING_VALUES_RANGE, DS_PLANE_COLOR_CODING_VALUES_RANGE]
-        if self.dimension == 3:
-            return max(
-                np.linalg.norm(
-                    self.apply_functions_to_point([x, y, z]), 2
-                ) for x in range(*rg_vals) for y in range(*rg_vals) for z in range(*rg_vals)
-            ) * DS_COLOR_CODING_SCALE_FACTOR
-        else:
-            return max(
-                np.linalg.norm(
-                    self.apply_functions_to_point([x, y]), 2
-                ) for x in range(*rg_vals) for y in range(*rg_vals)
-            ) * DS_COLOR_CODING_SCALE_FACTOR
 
     def add_to_scene(self):
         self.scene.add(self.point, self.trace)
@@ -612,3 +456,79 @@ class AbstractDynamicalSystem(VGroup):
     def get_solution_through_point(self, point):
         raise Exception("Need to implement get_solution_through_point in a subclass.")
 
+
+
+
+class SystemColorManager:
+    def setup_color_mappings(self, dynamical_system: BaseDynamicalSystem) -> None:
+        if dynamical_system.color_code_velocity:
+            assert len(dynamical_system.velocity_colors) == 3, "Must take exactly three colors for coloring velocity"
+            
+            slow_to_med_color_weight = 1
+            # A few ways of automatically generating the color code limit, i.e. the value
+            # after which lines are painted in the color associated ot the highest velocity.
+            if dynamical_system.color_code_velocity == 'from_trace':
+                color_coding_limit = self._get_color_coding_limit_from_trace_simulation(dynamical_system) 
+            elif dynamical_system.color_code_velocity == 'from_plane':
+                color_coding_limit = self._get_color_coding_limit_from_plane_points() 
+            elif dynamical_system.color_code_velocity == 'manual':
+                color_coding_limit = dynamical_system.velocity_colors[2][1]
+                # slow_to_med_color_weight should be the percentage of the color coding limit
+                # over which to calculate the slow_to_med gradient (higher percentage means
+                # higher thresholds for slow color)
+                slow_to_med_color_weight = dynamical_system.velocity_colors[0][1]
+            else:
+                raise AssertionError("Unsupported color_code_velocity type")
+            
+            dynamical_system.velocity_colors = [Color(c[0]) for c in dynamical_system.velocity_colors]
+            color_slow_to_med = list(dynamical_system.velocity_colors[0].range_to(dynamical_system.velocity_colors[1], DS_COLOR_CODING_VARIETY))
+            color_med_to_fast = list(dynamical_system.velocity_colors[1].range_to(dynamical_system.velocity_colors[2], DS_COLOR_CODING_VARIETY))
+            colors = color_slow_to_med + color_med_to_fast[1:]
+
+            if slow_to_med_color_weight == 1:
+                step = color_coding_limit / len(colors)           
+                value_range = np.arange(0, color_coding_limit + step/2, step)
+            else:
+                weighted_half_color_coding_limit = slow_to_med_color_weight*color_coding_limit
+                slow_to_med_step = weighted_half_color_coding_limit / (len(color_slow_to_med) - 1)
+                med_to_fast_step = (color_coding_limit - weighted_half_color_coding_limit) / len(color_med_to_fast)
+                slow_to_med_values = list(np.arange(0, weighted_half_color_coding_limit + slow_to_med_step/2, slow_to_med_step))[1:]
+                med_to_fast_values = list(np.arange(weighted_half_color_coding_limit + med_to_fast_step, color_coding_limit + med_to_fast_step/2, med_to_fast_step))
+                value_range = slow_to_med_values + med_to_fast_values
+
+            dynamical_system.color_mappings = list(zip(colors, value_range))
+            dynamical_system.color_mappings.reverse()
+
+    def _get_color_coding_limit_from_trace_simulation(self, dynamical_system: BaseDynamicalSystem):
+        """Generates a color coding limit by iteratively updating the system's
+        coordinates and using the maximum of all calculated coordinates.."""
+
+        initial_coords = copy.deepcopy(dynamical_system.coords)
+        color_coding_limit = max(
+            np.linalg.norm(
+                dynamical_system.update_coords(initial_coords, HD_TIME_DELTA), 2
+            ) for _ in range(DS_TRACE_COLOR_CODING_N_OF_ITERATIONS)
+        ) * DS_COLOR_CODING_SCALE_FACTOR
+
+        # Equilibrium points would result in a color coding limit of 0,
+        # which we can't have currently
+        return color_coding_limit if color_coding_limit > 0 else 0.01
+
+    def _get_color_coding_limit_from_plane_points(self, dynamical_system: BaseDynamicalSystem):
+        """Generates a color coding limit by applying the system functions once
+        to a bunch of integer pairs of the plane and getting the maximum among
+        those values."""
+
+        rg_vals = [-DS_PLANE_COLOR_CODING_VALUES_RANGE, DS_PLANE_COLOR_CODING_VALUES_RANGE]
+        if dynamical_system.dimension == 3:
+            return max(
+                np.linalg.norm(
+                    dynamical_system.apply_functions_to_point([x, y, z]), 2
+                ) for x in range(*rg_vals) for y in range(*rg_vals) for z in range(*rg_vals)
+            ) * DS_COLOR_CODING_SCALE_FACTOR
+        else:
+            return max(
+                np.linalg.norm(
+                    dynamical_system.apply_functions_to_point([x, y]), 2
+                ) for x in range(*rg_vals) for y in range(*rg_vals)
+            ) * DS_COLOR_CODING_SCALE_FACTOR
