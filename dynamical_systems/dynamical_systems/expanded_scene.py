@@ -217,6 +217,7 @@ class ExpandedThreeDScene(ThreeDScene):
         rotation=EXP_SCENE_DEFAULT_CAMERA_ROTATION,
         rotation_center=ORIGIN,
         rotate_on_axis=None,
+        rotate=True
     ):
         # Set up rotation
         if rotation is not None:
@@ -227,20 +228,35 @@ class ExpandedThreeDScene(ThreeDScene):
         def get_dt(dt, offset=0):
             return 0.1 + math.cos(dt + offset)
 
-        # Continuously rotate camera
-        if rotate_on_axis is not None:
-            axes = [RIGHT, UP, OUT]
-            rotation_func = lambda t: get_dt(t) * axes[rotate_on_axis]
-        else:
-            rotation_func = lambda t: get_dt(t) * OUT + get_dt(t, PI/2) * UP + get_dt(t, PI) * RIGHT
+        if rotate:
+            # Continuously rotate camera
+            if rotate_on_axis is not None:
+                axes = [RIGHT, UP, OUT]
+                rotation_func = lambda t: get_dt(t) * axes[rotate_on_axis]
+            else:
+                # rotation_func = lambda t: get_dt(t) * OUT + get_dt(t, PI/2) * UP + get_dt(t, PI) * RIGHT
+                rotation_func = lambda t:  get_dt(t, PI/2) * UP #- get_dt(t, PI) * RIGHT
 
-        self.camera.frame.add_updater(
-            lambda camFrame, dt: camFrame.rotate(
-                angle=rate,
-                axis=(rotation_func)(dt),
-                about_point=rotation_center,
+            def _rotate_with_logs(camFrame, dt):
+                camFrame.rotate(
+                    angle=rate,
+                    axis=(rotation_func)(dt),
+                    about_point=rotation_center,
+                )
+                print(f"rotation: {camFrame.get_orientation().as_rotvec()}")
+
+
+            self.camera.frame.add_updater(
+                lambda camFrame, dt: _rotate_with_logs(camFrame, dt)
             )
-        )
+
+            # self.camera.frame.add_updater(
+            #     lambda camFrame, dt: camFrame.rotate(
+            #         angle=rate,
+            #         axis=(rotation_func)(dt),
+            #         about_point=rotation_center,
+            #     )
+            # )
     
     def set_up_axes(self, color_axes=False):
         axes_length = 50
@@ -383,6 +399,7 @@ class ExpandedThreeDScene(ThreeDScene):
             is_for_n_positions=0, # Can also be a natural number
             color_coded=True,
             fade_out_trace=True,
+            color=TEAL,
         ):
         if fade_out_trace and is_snapshot:
             raise Exception("Can't ask for a faded-out snapshot (yet?)")
@@ -393,5 +410,5 @@ class ExpandedThreeDScene(ThreeDScene):
         if color_coded:
             params.update(self._get_system_params_for_color_coded_velocity(fade_out_trace))
 
-        return DynamicalSystemFamily(**params)
+        return DynamicalSystemFamily(**params, color=color)
 
