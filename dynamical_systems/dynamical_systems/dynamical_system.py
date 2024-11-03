@@ -59,7 +59,7 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
         self.last_coords = self.copy_coords(self.last_coords, self.coords)
 
         n_of_iterations = math.floor(abs(self.time_domain[is_forward]) / dt)
-        should_log_build_progress = self.color_code_velocity and n_of_iterations > 1000
+        should_log_build_progress = (self.color_code_velocity and n_of_iterations > 1000) or n_of_iterations > 5000
 
         if should_log_build_progress:
             print(f"Building solution piece. Total of iterations to build: {n_of_iterations}")
@@ -79,7 +79,8 @@ class DynamicalSystemSnapshot(AbstractDynamicalSystem):
             if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
                 print(f"{i} iterations completed")
                 
-            sum_of_coords += self.last_coords
+            # print(sum_of_coords, self.last_coords)
+            sum_of_coords += self.adapt_dimensions(self.last_coords)
 
             maybe_updated_coords = self.update_coords(copy.deepcopy(self.coords), dt)
             self.is_updated_coord_too_far = np.linalg.norm(
@@ -250,7 +251,6 @@ class DynamicalSystem(AbstractDynamicalSystem):
         self.scene.bring_to_front(self.trace)
 
         # print("Trace updated - moved to", [round(c, 7) for c in self.coords], "from", [round(c, 7) for c in self.last_coords], '\n')
-
 
     def build_solution(self):
         # self.point_and_trace.add_updater(self.point_and_trace_func)
@@ -466,19 +466,25 @@ class PhasePlane(DynamicalSystemFamily):
         dx,
         dy,
         time_domain=DS_SNAPSHOT_DEFAULT_TIME_DOMAIN,
+        step=DS_PHASE_PLANE_DEFAULT_STEP,
         show_snapshots=False, # Whether to show DynamicalSystemSnapshot's (True) or DynamicalSystem's (False)
         show_points=True,
+        remove_axis: Coords=False,
         color_code_velocity=False,
         lower_quality=False,
         style=BASE_STYLE,
         **kwargs
     ):
         self.show_points = show_points
-        step = DS_PHASE_PLANE_DEFAULT_STEP
         # Set up initial positions on plane points
-        x_range = [math.ceil(plane.x_range[0]), math.floor(plane.x_range[1]) + step]
-        y_range = [math.ceil(plane.y_range[0]), math.floor(plane.y_range[1]) + step]
-        initial_positions = [[x,y] for y in np.arange(*y_range, step) for x in np.arange(*x_range, step)]
+        x_points = list(np.arange(math.ceil(plane.x_range[0]), math.floor(plane.x_range[1]) + step, step))
+        y_points = list(np.arange(math.ceil(plane.y_range[0]), math.floor(plane.y_range[1]) + step, step))
+        if remove_axis == Coords.X:
+            y_points.remove(0)
+        elif remove_axis == Coords.Y:
+            x_points.remove(0)
+
+        initial_positions = [[x,y] for y in y_points for x in x_points]
 
         super().__init__(
             scene=scene,
