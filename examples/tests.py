@@ -1,8 +1,3 @@
-import sys
-# Don't know why but ManimGL doesn't add current working directory as part of the PATH.
-# Doing this so I can import dynamical_systems.
-sys.path.append('/Users/matiaspalumbo/dynamical_systems/dynamical_systems')
-
 from manimlib import *
 from dynamical_systems import *
 import numpy as np

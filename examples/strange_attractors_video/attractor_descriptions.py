@@ -1,7 +1,3 @@
-import sys
-
-# sys.path.append('/Users/matiaspalumbo/manim-custom')
-
 from manimlib import *
 from dynamical_systems import *
 from sympy import Symbol, Expr, latex
