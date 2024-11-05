@@ -470,7 +470,7 @@ class SystemColorManager:
             if dynamical_system.color_code_velocity == 'from_trace':
                 color_coding_limit = self._get_color_coding_limit_from_trace_simulation(dynamical_system) 
             elif dynamical_system.color_code_velocity == 'from_plane':
-                color_coding_limit = self._get_color_coding_limit_from_plane_points() 
+                color_coding_limit = self._get_color_coding_limit_from_plane_points(dynamical_system) 
             elif dynamical_system.color_code_velocity == 'manual':
                 color_coding_limit = dynamical_system.velocity_colors[2][1]
                 # slow_to_med_color_weight should be the percentage of the color coding limit
