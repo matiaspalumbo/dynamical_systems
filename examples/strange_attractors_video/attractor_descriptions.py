@@ -38,10 +38,6 @@ class AttractorDescription(Scene):
         f = Symbol('f')
         non_tex_params = [symb.name for symb in [a, b, c, d, f]]
 
-        # for i in range(3):
-        #     print(eval(functions[i]))
-        #     print(latex(eval(functions[i])))
-
         evaluated_functions = f"""
             \\left\\{{
             \\begin{{aligned}}

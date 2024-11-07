@@ -66,20 +66,12 @@ class DynamicalSystemSnapshot(BaseDynamicalSystem):
 
         sum_of_coords = ORIGIN
 
-        import time
-        time_sum = 0
-
         ITERATION_MODULUS = 1000
 
         for i in range(n_of_iterations):
-
-            if i % 1000 == 0 and i != 0:
-                print(f"Average point: {sum_of_coords / i}") # Average point
-            
             if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
                 print(f"{i} iterations completed")
-                
-            # print(sum_of_coords, self.last_coords)
+
             sum_of_coords += self.adapt_dimensions(self.last_coords)
 
             maybe_updated_coords = self.update_coords(copy.deepcopy(self.coords), dt)
@@ -98,18 +90,7 @@ class DynamicalSystemSnapshot(BaseDynamicalSystem):
                     # point = point.move_to(self.get_np_array_from_list(self.adapt_dimensions(self.last_coords)))
 
             self.last_coords = self.copy_coords(self.last_coords, self.coords)
-            self.coords = self.update_coords(self.coords, dt/self.precision_multiplier_if_trace_too_rough if self.is_updated_coord_too_far else dt)
-
-
-            # self.last_coords = self.copy_coords(self.last_coords, self.coords)
-            # self.coords = self.update_coords(self.coords, dt if is_forward else -dt)
-
-            # current_time = time.process_time()
-            # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
-            #     print(f"Adding line to trace")
-
-
-            # self.update_trace(trace, self.coords, self.last_coords)            
+            self.coords = self.update_coords(self.coords, dt/self.precision_multiplier_if_trace_too_rough if self.is_updated_coord_too_far else dt)      
 
             if len(self.second_to_last_coords) > 0 and self.is_updated_coord_too_far:
                 mult = self.precision_multiplier_if_trace_too_rough
@@ -119,13 +100,6 @@ class DynamicalSystemSnapshot(BaseDynamicalSystem):
                 self.update_trace(trace, self.last_coords, self.second_to_last_coords[mult-2])
 
             self.update_trace(trace, self.coords, self.last_coords)
-
-            # time_sum += time.process_time() - current_time
-            # if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
-            #     print(f"Added line! - this batch took {time_sum} seconds\n")
-
-            if should_log_build_progress and i % ITERATION_MODULUS == 0 and i != 0:
-                time_sum = 0
 
         if should_log_build_progress:
             print("Done building piece!")
@@ -228,11 +202,6 @@ class DynamicalSystem(BaseDynamicalSystem):
         self.coords = self.update_coords(self.coords, dt/self.precision_multiplier_if_trace_too_rough if self.is_updated_coord_too_far else dt)
         for axis in self.dimension_axes:
             self.d_list[axis].append(self.coords[axis])
-
-        # if len(self.d_list[0]) % 100 == 0:
-        #     print(len(self.d_list[0]), "iterations", "Average point:", np.array([sum(self.d_list[i]) for i in [0,1,2]]) / len(self.d_list[0]))
-        
-        # print("Point updated - moved to", [round(c, 7) for c in self.coords])
 
         return point.move_to(self.get_np_array_from_list(self.adapt_dimensions(self.coords)))
 

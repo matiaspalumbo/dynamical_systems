@@ -184,35 +184,15 @@ class BaseDynamicalSystem(VGroup):
 
         trace.add(new_line)
 
-        # time_to_add_trace = time.process_time() - current_time
-        # print('\n')
-        # print("Sum of lengths:", round(self.sum_of_trace_lines_not_faded_out, 3), "First index not fadeout:", self.first_index_not_to_fade_out, "Trace length:", len(trace.submobjects))
         self.sum_of_trace_lines_not_faded_out += np.linalg.norm(new_line.get_vector(), 2)
         self.sum_of_all_trace_lines += np.linalg.norm(new_line.get_vector(), 2)
-        # print("New sum of trace lenghts:", self.sum_of_trace_lines_not_faded_out)
 
         trace_length = len(trace.submobjects)
-        # print("trace length", trace_length)
-        # print('Length of new line:', np.linalg.norm(new_line.get_vector(), 2))
-        non_faded_out_trace_length = trace_length if self.first_index_not_to_fade_out is None else len(trace.submobjects[self.first_index_not_to_fade_out:])
 
+        non_faded_out_trace_length = trace_length if self.first_index_not_to_fade_out is None else len(trace.submobjects[self.first_index_not_to_fade_out:])
         should_fade_out_something = self.sum_of_all_trace_lines >= self.amount_to_not_fade_out_trace_before or non_faded_out_trace_length > self.max_number_of_trace_lines
 
-        # print("\nis over threshold?", self.sum_of_trace_lines_not_faded_out >= self.amount_to_not_fade_out_trace_before, f" (sum of trace lengths: {self.sum_of_trace_lines_not_faded_out})")
-        # print("is length too long?", non_faded_out_trace_length > self.max_number_of_trace_lines, f" (length: {non_faded_out_trace_length})")
-        # print("first_index_not_to_fade_out is: ", self.first_index_not_to_fade_out)
-        # print("total length:", sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects))
-        # print("should fade out something:", should_fade_out_something)
-
-        # if non_faded_out_trace_length > self.max_number_of_trace_lines:
-        #     # self.first_index_not_to_fade_out = trace_length - self.max_number_of_trace_lines
-        #     if self.first_index_not_to_fade_out is None:
-        #         self.first_index_not_to_fade_out = 0
-        #     else:
-        #         self.first_index_not_to_fade_out += 1
-        #     print("TRACE_LENGTH EXCEEDED - new first-index-not-to:", self.first_index_not_to_fade_out, non_faded_out_trace_length)
         if self.first_index_not_to_fade_out is None:
-            # print("first_index_not_to_fade_out is None for now")
             if non_faded_out_trace_length > self.max_number_of_trace_lines:
                 self.first_index_not_to_fade_out = 1
 
@@ -220,76 +200,51 @@ class BaseDynamicalSystem(VGroup):
             for i in range(1, trace_length + 1):
                 partial_sum_of_trace_line_lengths += np.linalg.norm(trace.submobjects[-i].get_vector(), 2)
                 if partial_sum_of_trace_line_lengths > self.amount_to_not_fade_out_trace_before:
-                    # print("Found a first_index_not_to_fade_out")
                     self.first_index_not_to_fade_out = trace_length - i
                     self.sum_of_trace_lines_not_faded_out = partial_sum_of_trace_line_lengths
                     break
         else:
-            # print("first_index_not_to_fade_out is NOT None - and is", self.first_index_not_to_fade_out)
             if self.sum_of_trace_lines_not_faded_out >= self.amount_to_not_fade_out_trace_before or non_faded_out_trace_length > self.max_number_of_trace_lines:
-                # print("New line causes to exceed fadeout threshold")
                 if self.sum_of_trace_lines_not_faded_out < self.amount_to_not_fade_out_trace_before:
                     self.first_index_not_to_fade_out += 1
                 else:
                     a = self.sum_of_trace_lines_not_faded_out
                     found_value = False
                     for i in range(1, trace_length - self.first_index_not_to_fade_out + 1):
-                        # print("---- Checking where to increase first_index_not_to_fade_out - currently on", self.first_index_not_to_fade_out + i - 1)
-                        # print("     > length of this line:", np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2))
-                        # print("     > sum up to this vector:", a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2) for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)))
                         if a - sum(np.linalg.norm(trace.submobjects[j].get_vector(),2)
                             for j in range(self.first_index_not_to_fade_out, self.first_index_not_to_fade_out + i)
                         ) <= self.amount_to_not_fade_out_trace_before:
                             found_value = True
                             self.first_index_not_to_fade_out += i
-                            # print("first_index_not_to_fade_out increased by", i, " - now is", self.first_index_not_to_fade_out)
                             break
-                        # elif self.first_index_not_to_fade_out + i > self.max_number_of_trace_lines:
-                        #     found_value = True
-                        #     self.first_index_not_to_fade_out += i
-                        #     print(f"Trace too long! {trace_length=}, first_index_not_to_fade_out={self.first_index_not_to_fade_out}")
-                        # else:
-                            # self.sum_of_trace_lines_not_faded_out -= np.linalg.norm(trace.submobjects[self.first_index_not_to_fade_out + i - 1].get_vector(),2)
                     if not found_value:
-                        # print("Last value alone is bigger than threshold?")
                         if non_faded_out_trace_length > self.max_number_of_trace_lines:
                             self.first_index_not_to_fade_out += 1
-                            print("TRACE_LENGTH EXCEEDED - new first-index-not-to:", self.first_index_not_to_fade_out, non_faded_out_trace_length)
                         else:
                             self.first_index_not_to_fade_out = trace_length - 1
             else:
-                # self.first_index_not_to_fade_out = 0
-                # print("Sum of trace lengths NOT BIGGER THAN THRESHOLD")
                 pass
             self.sum_of_trace_lines_not_faded_out = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects[self.first_index_not_to_fade_out:])
             self.sum_of_all_trace_lines = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects)
 
         
         if self.first_index_not_to_fade_out is not None and should_fade_out_something:
-            # print("Iterating through lines to see which ones to fade out completely...")
             for i in range(1, self.first_index_not_to_fade_out + 1):
                 index = self.first_index_not_to_fade_out - i
                 opacity = trace.submobjects[index].get_opacity()
                 if opacity <= self.trace_fadeout_decrease_factor:
-                    # print("Will delete everything before line", index)
                     trace.submobjects[index].set_opacity(0)
                     self.unused_traces_repository += self.trace.submobjects[:index+1]
                     self.trace.submobjects = self.trace.submobjects[index+1:]
                     self.first_index_not_to_fade_out -= index
                     break
                 else:
-                    # print("Faded out a bit line", index)
                     trace.submobjects[index].set_opacity(
                         max(0, opacity - self.trace_fadeout_decrease_factor)
                     )
                     trace.submobjects[index].set_stroke(
                         width=trace.submobjects[index].get_stroke_width() * (1 - self.trace_fadeout_decrease_factor)
                     )
-
-        # print(f"Time to add trace: {time_to_add_trace}")
-        # print(f"Time to calc. ind: {time.process_time() - time_to_add_trace - current_time}")
-        # print(f"       Total time: {time.process_time() - current_time}\n")
-
 
     def add_corners_to_trace(self, trace, coords):
         trace.add_points_as_corners([self.get_np_array_from_list(coords)])
@@ -302,7 +257,6 @@ class BaseDynamicalSystem(VGroup):
         if self.color_code_velocity:
             vec = self.get_np_array_from_list(self.apply_functions_to_point(self.coords))
             val = np.linalg.norm(vec, 2)
-            # print(val)
             for color, limit in self.color_mappings:
                 if val > limit:
                     return color
@@ -338,7 +292,6 @@ class BaseDynamicalSystem(VGroup):
 
 
     def update_coord(self, coords, dt, axis):
-        # print(axis, " ---- ", self.functions[axis](*coords))
         return coords[axis] + self.functions[axis](*coords) * dt * self.speed_rate
 
 

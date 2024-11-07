@@ -234,8 +234,7 @@ class ExpandedThreeDScene(ThreeDScene):
                 axes = [RIGHT, UP, OUT]
                 rotation_func = lambda t: get_dt(t) * axes[rotate_on_axis]
             else:
-                # rotation_func = lambda t: get_dt(t) * OUT + get_dt(t, PI/2) * UP + get_dt(t, PI) * RIGHT
-                rotation_func = lambda t:  get_dt(t, PI/2) * UP #- get_dt(t, PI) * RIGHT
+                rotation_func = lambda t:  get_dt(t, PI/2) * UP
 
             def _rotate_with_logs(camFrame, dt):
                 camFrame.rotate(
@@ -243,20 +242,10 @@ class ExpandedThreeDScene(ThreeDScene):
                     axis=(rotation_func)(dt),
                     about_point=rotation_center,
                 )
-                print(f"rotation: {camFrame.get_orientation().as_rotvec()}")
-
 
             self.camera.frame.add_updater(
                 lambda camFrame, dt: _rotate_with_logs(camFrame, dt)
             )
-
-            # self.camera.frame.add_updater(
-            #     lambda camFrame, dt: camFrame.rotate(
-            #         angle=rate,
-            #         axis=(rotation_func)(dt),
-            #         about_point=rotation_center,
-            #     )
-            # )
     
     def set_up_axes(self, color_axes=False):
         axes_length = 50
