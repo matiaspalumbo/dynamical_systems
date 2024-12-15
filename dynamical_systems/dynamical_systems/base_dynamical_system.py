@@ -95,7 +95,6 @@ class BaseDynamicalSystem(VGroup):
         # Parameters to handle in system color manager:
             # color_code_velocity
 
-
         self._trace_color_manager = SystemColorManager()
         self._trace_color_manager.setup_color_mappings(self)
 
@@ -108,7 +107,6 @@ class BaseDynamicalSystem(VGroup):
         self.point = point
         self.trace = trace
         self.trace_update_function = self.get_trace_update_function()
-        self.unused_traces_repository = []
 
         self.build_solution()
 
@@ -158,29 +156,17 @@ class BaseDynamicalSystem(VGroup):
         )
         trace.submobjects.append(new_line)
         trace.family.insert(0, new_line)
-        trace.refresh_has_updater_status()
         trace.refresh_bounding_box()
 
     def add_line_objects_to_trace_and_fade_out(self, trace: VGroup, coords, last_coords):
         new_position = self.get_new_line_position(coords, last_coords)
-        if self.unused_traces_repository:
-            color = np.array([color_to_rgb(self.get_trace_color())])
-            new_line = self.unused_traces_repository.pop(0).set_points_as_corners(
-                [new_position[0], new_position[1]]
-            )
-            new_line.data['fill_rgba'][:, :3] = color # Set color to fill
-            new_line.data['fill_rgba'][:, 3] = 1 # Set opacity to fill
-            new_line.data['stroke_rgba'][:, :3] = color # Set color to stroke
-            new_line.data['stroke_rgba'][:, 3] = 1 # Set opacity to stroke
-            new_line.data['stroke_width'] = np.array([[float(self.width)]])
-        else:
-            new_line = Line(
-                new_position[0],
-                new_position[1],
-                color=self.get_trace_color(),
-                stroke_width=self.width,
-                stroke_opacity=self.stroke_opacity
-            )
+        new_line = Line(
+            new_position[0],
+            new_position[1],
+            color=self.get_trace_color(),
+            stroke_width=self.width,
+            stroke_opacity=self.stroke_opacity
+        )
 
         trace.add(new_line)
 
@@ -227,16 +213,13 @@ class BaseDynamicalSystem(VGroup):
             self.sum_of_trace_lines_not_faded_out = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects[self.first_index_not_to_fade_out:])
             self.sum_of_all_trace_lines = sum(np.linalg.norm(line.get_vector(), 2) for line in trace.submobjects)
 
-        
         if self.first_index_not_to_fade_out is not None and should_fade_out_something:
-            for i in range(1, self.first_index_not_to_fade_out + 1):
-                index = self.first_index_not_to_fade_out - i
+            for index in range(self.first_index_not_to_fade_out-1, -1, -1):
                 opacity = trace.submobjects[index].get_opacity()
-                if opacity <= self.trace_fadeout_decrease_factor:
+                if opacity <= 2 * self.trace_fadeout_decrease_factor:
                     trace.submobjects[index].set_opacity(0)
-                    self.unused_traces_repository += self.trace.submobjects[:index+1]
                     self.trace.submobjects = self.trace.submobjects[index+1:]
-                    self.first_index_not_to_fade_out -= index
+                    self.first_index_not_to_fade_out -= index+1
                     break
                 else:
                     trace.submobjects[index].set_opacity(
