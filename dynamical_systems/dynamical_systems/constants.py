@@ -91,3 +91,8 @@ EXP_SCENE_DEFAULT_RANGE_LIMIT = 1
 
 # Default maximum velocity when color-coding a system
 EXP_SCENE_DEFAULT_MAX_VELOCITY = 10
+
+
+"""NativeDynamicalSystem-related constants"""
+
+DEFAULT_FADE_START_TIME = 10.0
